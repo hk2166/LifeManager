@@ -1,25 +1,25 @@
 /* Life OS — Apple-flavored design system (system font, iOS light+dark, materials, springs) */
 
 :root {
-  /* light — iOS system grouped */
-  --bg: #f2f2f7;
+  /* light — monochrome (Canvas UI): white canvas, black ink, black accent */
+  --bg: #f5f5f4;
   --surface: #ffffff;
-  --surface-2: #ffffff;
-  --chrome: rgba(249, 249, 251, 0.72);
-  --ink: #1c1c1e;
-  --ink-2: rgba(60, 60, 67, 0.6);
-  --ink-3: rgba(60, 60, 67, 0.3);
-  --hairline: rgba(60, 60, 67, 0.14);
-  --fill: rgba(118, 118, 128, 0.12);
-  --fill-2: rgba(118, 118, 128, 0.2);
-  --accent: #007aff;
-  --accent-press: #0060df;
+  --surface-2: #eeeeec;
+  --chrome: rgba(250, 250, 249, 0.72);
+  --ink: #0a0a0a;
+  --ink-2: rgba(10, 10, 10, 0.56);
+  --ink-3: rgba(10, 10, 10, 0.34);
+  --hairline: rgba(10, 10, 10, 0.12);
+  --fill: rgba(10, 10, 10, 0.05);
+  --fill-2: rgba(10, 10, 10, 0.09);
+  --accent: #0a0a0a;
+  --accent-press: #333333;
   --on-accent: #ffffff;
-  --red: #ff3b30;
-  --red-bg: rgba(255, 59, 48, 0.1);
-  --amber: #c77700;
-  --green: #248a3d;
-  --scrim: rgba(0, 0, 0, 0.28);
+  --red: #d23b30;
+  --red-bg: rgba(210, 59, 48, 0.1);
+  --amber: rgba(10, 10, 10, 0.5);
+  --green: #0a0a0a;
+  --scrim: rgba(0, 0, 0, 0.3);
   --shadow-card: 0 1px 2px rgba(20, 24, 40, 0.05), 0 10px 30px -18px rgba(20, 24, 40, 0.22);
   --shadow-pop: 0 8px 20px -6px rgba(20, 24, 40, 0.18), -28px 0 60px -28px rgba(20, 24, 40, 0.34);
   --r-card: 18px;
@@ -31,46 +31,46 @@
 :root:not([data-theme='light']) {
   @media (prefers-color-scheme: dark) {
     --bg: #000000;
-    --surface: #1c1c1e;
-    --surface-2: #2c2c2e;
-    --chrome: rgba(30, 30, 32, 0.7);
-    --ink: #f5f5f7;
-    --ink-2: rgba(235, 235, 245, 0.6);
-    --ink-3: rgba(235, 235, 245, 0.3);
-    --hairline: rgba(84, 84, 88, 0.5);
-    --fill: rgba(118, 118, 128, 0.24);
-    --fill-2: rgba(118, 118, 128, 0.36);
-    --accent: #0a84ff;
-    --accent-press: #409cff;
-    --on-accent: #ffffff;
-    --red: #ff453a;
-    --red-bg: rgba(255, 69, 58, 0.16);
-    --amber: #ffb340;
-    --green: #30d158;
-    --scrim: rgba(0, 0, 0, 0.5);
+    --surface: #0e0e0e;
+    --surface-2: #1a1a1a;
+    --chrome: rgba(10, 10, 10, 0.72);
+    --ink: #fafafa;
+    --ink-2: rgba(255, 255, 255, 0.56);
+    --ink-3: rgba(255, 255, 255, 0.34);
+    --hairline: rgba(255, 255, 255, 0.1);
+    --fill: rgba(255, 255, 255, 0.07);
+    --fill-2: rgba(255, 255, 255, 0.13);
+    --accent: #ffffff;
+    --accent-press: #d4d4d4;
+    --on-accent: #000000;
+    --red: #ff5f56;
+    --red-bg: rgba(255, 95, 86, 0.14);
+    --amber: rgba(255, 255, 255, 0.56);
+    --green: #fafafa;
+    --scrim: rgba(0, 0, 0, 0.6);
     --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.4), 0 12px 32px -18px rgba(0, 0, 0, 0.7);
     --shadow-pop: 0 10px 24px -6px rgba(0, 0, 0, 0.5), -28px 0 70px -30px rgba(0, 0, 0, 0.8);
   }
 }
 :root[data-theme='dark'] {
   --bg: #000000;
-  --surface: #1c1c1e;
-  --surface-2: #2c2c2e;
-  --chrome: rgba(30, 30, 32, 0.7);
-  --ink: #f5f5f7;
-  --ink-2: rgba(235, 235, 245, 0.6);
-  --ink-3: rgba(235, 235, 245, 0.3);
-  --hairline: rgba(84, 84, 88, 0.5);
-  --fill: rgba(118, 118, 128, 0.24);
-  --fill-2: rgba(118, 118, 128, 0.36);
-  --accent: #0a84ff;
-  --accent-press: #409cff;
-  --on-accent: #ffffff;
-  --red: #ff453a;
-  --red-bg: rgba(255, 69, 58, 0.16);
-  --amber: #ffb340;
-  --green: #30d158;
-  --scrim: rgba(0, 0, 0, 0.5);
+  --surface: #0e0e0e;
+  --surface-2: #1a1a1a;
+  --chrome: rgba(10, 10, 10, 0.72);
+  --ink: #fafafa;
+  --ink-2: rgba(255, 255, 255, 0.56);
+  --ink-3: rgba(255, 255, 255, 0.34);
+  --hairline: rgba(255, 255, 255, 0.1);
+  --fill: rgba(255, 255, 255, 0.07);
+  --fill-2: rgba(255, 255, 255, 0.13);
+  --accent: #ffffff;
+  --accent-press: #d4d4d4;
+  --on-accent: #000000;
+  --red: #ff5f56;
+  --red-bg: rgba(255, 95, 86, 0.14);
+  --amber: rgba(255, 255, 255, 0.56);
+  --green: #fafafa;
+  --scrim: rgba(0, 0, 0, 0.6);
   --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.4), 0 12px 32px -18px rgba(0, 0, 0, 0.7);
   --shadow-pop: 0 10px 24px -6px rgba(0, 0, 0, 0.5), -28px 0 70px -30px rgba(0, 0, 0, 0.8);
 }
@@ -223,9 +223,10 @@ body {
   gap: 6px;
 }
 h2 {
-  font-size: 0.74rem;
-  font-weight: 600;
-  letter-spacing: 0.045em;
+  font-family: var(--mono);
+  font-size: 0.72rem;
+  font-weight: 500;
+  letter-spacing: 0.14em;
   text-transform: uppercase;
   color: var(--ink-2);
   margin: 26px 4px 9px;
@@ -239,6 +240,7 @@ h2 {
   text-align: center;
   font-size: 0.94rem;
   background: var(--surface);
+  border: 0.5px solid var(--hairline);
   border-radius: var(--r-card);
   box-shadow: var(--shadow-card);
 }
@@ -256,6 +258,7 @@ h2 {
 .stats { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 6px; }
 .stat {
   background: var(--surface);
+  border: 0.5px solid var(--hairline);
   border-radius: var(--r-card);
   padding: 18px 20px;
   box-shadow: var(--shadow-card);
@@ -267,11 +270,19 @@ h2 {
   letter-spacing: -0.035em;
   font-variant-numeric: tabular-nums;
 }
-.stat-l { color: var(--ink-2); font-size: 0.9rem; margin-top: 4px; letter-spacing: -0.01em; }
+.stat-l {
+  color: var(--ink-2);
+  font-family: var(--mono);
+  font-size: 0.72rem;
+  margin-top: 6px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
 
 /* ---- inset-grouped lists ---- */
 .list {
   background: var(--surface);
+  border: 0.5px solid var(--hairline);
   border-radius: var(--r-card);
   box-shadow: var(--shadow-card);
   overflow: hidden;
@@ -329,6 +340,7 @@ h2 {
 /* ---- cards (meeting / digest / ask / drawer content) ---- */
 .card {
   background: var(--surface);
+  border: 0.5px solid var(--hairline);
   border-radius: var(--r-card);
   padding: 16px 18px;
   box-shadow: var(--shadow-card);

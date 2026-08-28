@@ -50,9 +50,9 @@ export function ItemRow({ item, onOpen }: { item: ItemWithSource; onOpen: (t: Dr
         <span className="row-sub">
           {who && <span className="chip">{who}</span>}
           {item.source_kind === 'memo' ? (
-            <span className="src">🎤 voice memo</span>
+            <span className="src">voice memo</span>
           ) : (
-            item.source && <span className="src">✉ {item.source.subject ?? 'email'}</span>
+            item.source && <span className="src">{item.source.subject ?? 'email'}</span>
           )}
         </span>
       </div>
@@ -251,7 +251,7 @@ export function AskView({ onOpen }: { onOpen: (t: DrawerTarget) => void }) {
                   className="src-chip"
                   onClick={() => onOpen({ title: s.subject ?? 'Source email', messageId: s.id })}
                 >
-                  ✉ {s.subject ?? s.from_email}
+                  {s.subject ?? s.from_email}
                 </button>
               ))}
             </div>
