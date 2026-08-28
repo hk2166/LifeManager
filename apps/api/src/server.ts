@@ -3,17 +3,10 @@ import cors from 'cors';
 import { ANTHROPIC_API_KEY, GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, OPENAI_API_KEY, PORT } from './config';
 import { q } from './db/index';
 import { oauthClient, saveTokens, SCOPES } from './google';
+import { h } from './http';
+import { registerMemoRoutes } from './memos';
 
 export const gmailUrl = (messageId: string) => `https://mail.google.com/mail/u/0/#all/${messageId}`;
-
-// express 4 doesn't catch async route errors - without this a DB hiccup kills the process
-const h =
-  (fn: (req: express.Request, res: express.Response) => Promise<unknown>) =>
-  (req: express.Request, res: express.Response) =>
-    void fn(req, res).catch((e) => {
-      console.error(e);
-      if (!res.headersSent) res.status(500).json({ error: String(e?.message ?? e) });
-    });
 
 const app = express();
 app.use(cors());
@@ -102,5 +95,7 @@ app.get('/api/messages/:id', h(async (req, res) => {
   if (!rows.length) return res.status(404).json({ error: 'not found' });
   res.json({ ...rows[0], gmail_url: gmailUrl(rows[0].id) });
 }));
+
+registerMemoRoutes(app);
 
 app.listen(PORT, () => console.log(`api on http://localhost:${PORT}`));
