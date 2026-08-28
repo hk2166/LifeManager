@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
+import { AccessibilityInfo, ActivityIndicator, Animated, Pressable, StyleSheet, Text, View } from 'react-native';
 import { AudioModule, RecordingPresets, setAudioModeAsync, useAudioRecorder } from 'expo-audio';
 import { confirmMemo, uploadMemo, type ItemType, type MemoResult } from './api';
 import { TYPE_ICONS } from './components';
@@ -19,6 +19,24 @@ export function MemoFlow({ onDone }: { onDone: () => void }) {
   const [err, setErr] = useState('');
   const uriRef = useRef<string | null>(null); // survives failures so retry never loses audio
   const started = useRef(false);
+  const pulse = useRef(new Animated.Value(1)).current;
+
+  // breathing pulse on the record dot — disabled under reduce-motion
+  useEffect(() => {
+    if (phase !== 'recording') return;
+    let anim: Animated.CompositeAnimation | undefined;
+    AccessibilityInfo.isReduceMotionEnabled().then((reduce) => {
+      if (reduce) return;
+      anim = Animated.loop(
+        Animated.sequence([
+          Animated.timing(pulse, { toValue: 0.35, duration: 750, useNativeDriver: true }),
+          Animated.timing(pulse, { toValue: 1, duration: 750, useNativeDriver: true }),
+        ])
+      );
+      anim.start();
+    });
+    return () => anim?.stop();
+  }, [phase, pulse]);
 
   // one tap on the mic tab = already recording: auto-start on mount
   useEffect(() => {
@@ -103,10 +121,12 @@ export function MemoFlow({ onDone }: { onDone: () => void }) {
 
       {phase === 'recording' && (
         <View style={s.center}>
-          <View style={s.dot} />
+          <Animated.View
+            style={[s.dot, { opacity: pulse, transform: [{ scale: pulse.interpolate({ inputRange: [0.35, 1], outputRange: [0.82, 1] }) }] }]}
+          />
           <Text style={s.timer}>{fmt(elapsed)}</Text>
-          <Text style={s.muted}>Listening - just say it.</Text>
-          <Pressable style={s.stop} onPress={stopAndUpload}>
+          <Text style={s.muted}>Listening — just say it.</Text>
+          <Pressable style={({ pressed }) => [s.stop, pressed && s.pressed]} onPress={stopAndUpload}>
             <Text style={s.stopText}>Stop</Text>
           </Pressable>
           <Pressable onPress={cancel}>
@@ -130,7 +150,11 @@ export function MemoFlow({ onDone }: { onDone: () => void }) {
             {[result.memo.suggested_type, ...ALL_TYPES.filter((t) => t !== result.memo.suggested_type)]
               .filter((t): t is ItemType => Boolean(t))
               .map((t, i) => (
-                <Pressable key={t} style={[s.chip, i === 0 && s.chipSuggested]} onPress={() => pick(t)}>
+                <Pressable
+                  key={t}
+                  style={({ pressed }) => [s.chip, i === 0 && s.chipSuggested, pressed && s.chipPressed]}
+                  onPress={() => pick(t)}
+                >
                   <Text style={s.chipText}>
                     {TYPE_ICONS[t]} {t}
                     {i === 0 ? ' ✨' : ''}
@@ -152,7 +176,7 @@ export function MemoFlow({ onDone }: { onDone: () => void }) {
           {result.item.due_at && (
             <Text style={s.muted}>due {new Date(result.item.due_at).toLocaleString()}</Text>
           )}
-          <Pressable style={s.stop} onPress={onDone}>
+          <Pressable style={({ pressed }) => [s.stop, pressed && s.pressed]} onPress={onDone}>
             <Text style={s.stopText}>Done</Text>
           </Pressable>
         </View>
@@ -162,7 +186,7 @@ export function MemoFlow({ onDone }: { onDone: () => void }) {
         <View style={s.center}>
           <Text style={s.errText}>{err}</Text>
           {uriRef.current && (
-            <Pressable style={s.stop} onPress={() => send(uriRef.current!)}>
+            <Pressable style={({ pressed }) => [s.stop, pressed && s.pressed]} onPress={() => send(uriRef.current!)}>
               <Text style={s.stopText}>Retry upload</Text>
             </Pressable>
           )}
@@ -178,33 +202,42 @@ export function MemoFlow({ onDone }: { onDone: () => void }) {
 const s = StyleSheet.create({
   wrap: { flex: 1, backgroundColor: C.bg },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 14, padding: 24 },
-  dot: { width: 22, height: 22, borderRadius: 11, backgroundColor: C.rec },
-  timer: { color: C.text, fontSize: 44, fontVariant: ['tabular-nums'], fontWeight: '200' },
-  muted: { color: C.muted, fontSize: 14 },
+  dot: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: C.rec,
+    shadowColor: C.rec,
+    shadowOpacity: 0.6,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 0 },
+  },
+  timer: { color: C.text, fontSize: 52, fontVariant: ['tabular-nums'], fontWeight: '200', letterSpacing: -1 },
+  muted: { color: C.muted, fontSize: 14.5, letterSpacing: -0.1 },
   stop: {
     backgroundColor: C.accent,
     borderRadius: 999,
-    paddingHorizontal: 42,
-    paddingVertical: 14,
-    marginTop: 10,
+    paddingHorizontal: 46,
+    paddingVertical: 15,
+    marginTop: 12,
   },
-  stopText: { color: '#fff', fontSize: 17, fontWeight: '600' },
+  pressed: { opacity: 0.85, transform: [{ scale: 0.97 }] },
+  stopText: { color: '#fff', fontSize: 17, fontWeight: '600', letterSpacing: -0.2 },
   cancel: { color: C.muted, fontSize: 15, padding: 8 },
-  heard: { color: C.text, fontSize: 17, fontStyle: 'italic', textAlign: 'center' },
-  ask: { color: C.muted, fontSize: 14 },
-  chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, justifyContent: 'center' },
+  heard: { color: C.text, fontSize: 18, fontStyle: 'italic', textAlign: 'center', letterSpacing: -0.3, lineHeight: 25 },
+  ask: { color: C.muted, fontSize: 14.5 },
+  chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 9, justifyContent: 'center' },
   chip: {
     backgroundColor: C.panel,
-    borderColor: C.border,
-    borderWidth: 1,
     borderRadius: 999,
-    paddingHorizontal: 14,
-    paddingVertical: 9,
+    paddingHorizontal: 15,
+    paddingVertical: 10,
   },
-  chipSuggested: { borderColor: C.accent, backgroundColor: C.chipBg },
-  chipText: { color: C.text, fontSize: 14.5 },
-  big: { fontSize: 44, color: '#7ac68b' },
-  routedTitle: { color: C.muted, fontSize: 13, textTransform: 'uppercase', letterSpacing: 1 },
-  itemTitle: { color: C.text, fontSize: 19, fontWeight: '600', textAlign: 'center' },
-  errText: { color: '#f2b8b2', textAlign: 'center', fontSize: 14.5 },
+  chipSuggested: { backgroundColor: C.accent },
+  chipPressed: { opacity: 0.6 },
+  chipText: { color: C.text, fontSize: 14.5, fontWeight: '500', letterSpacing: -0.1 },
+  big: { fontSize: 52, color: C.green },
+  routedTitle: { color: C.muted, fontSize: 12.5, textTransform: 'uppercase', letterSpacing: 0.8, fontWeight: '600' },
+  itemTitle: { color: C.text, fontSize: 20, fontWeight: '600', textAlign: 'center', letterSpacing: -0.4 },
+  errText: { color: C.danger, textAlign: 'center', fontSize: 14.5 },
 });

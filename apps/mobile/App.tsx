@@ -1,6 +1,7 @@
-import { useState } from 'react';
-import { Modal, Pressable, StyleSheet, Text, View } from 'react-native';
+import { useRef, useState } from 'react';
+import { Animated, Modal, Pressable, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
+import { BlurView } from 'expo-blur';
 import { StatusBar } from 'expo-status-bar';
 import { usePoll, type ItemWithSource } from './src/api';
 import { MemoDetail } from './src/MemoDetail';
@@ -15,51 +16,65 @@ export default function App() {
   const { data, error } = usePoll<ItemWithSource[]>('/api/items');
   const items = data ?? [];
 
+  const micScale = useRef(new Animated.Value(1)).current;
+  const springMic = (toValue: number) =>
+    Animated.spring(micScale, { toValue, useNativeDriver: true, bounciness: toValue < 1 ? 3 : 9, speed: 44 }).start();
+
   return (
     <SafeAreaProvider>
-    <SafeAreaView style={s.safe} edges={['top']}>
-      <StatusBar style="light" />
-      <View style={s.header}>
-        <Text style={s.brand}>Life OS</Text>
-        {error && <Text style={s.offline}>offline</Text>}
-      </View>
+      <SafeAreaView style={s.safe} edges={['top']}>
+        <StatusBar style="light" />
+        <View style={s.header}>
+          <View style={s.brandRow}>
+            <View style={s.dot} />
+            <Text style={s.brand}>Life OS</Text>
+          </View>
+          {error && <Text style={s.offline}>offline</Text>}
+        </View>
 
-      {tab === 'today' ? (
-        <TodayScreen items={items} onOpenMemoItem={setDetailId} />
-      ) : (
-        <ItemsScreen items={items} onOpenMemoItem={setDetailId} />
-      )}
+        {tab === 'today' ? (
+          <TodayScreen items={items} onOpenMemoItem={setDetailId} />
+        ) : (
+          <ItemsScreen items={items} onOpenMemoItem={setDetailId} />
+        )}
 
-      <View style={s.tabbar}>
-        <Pressable style={s.tab} onPress={() => setTab('today')}>
-          <Text style={[s.tabText, tab === 'today' && s.tabActive]}>Today</Text>
-        </Pressable>
-        <Pressable style={s.mic} onPress={() => setMemoOpen(true)}>
-          <Text style={s.micIcon}>🎤</Text>
-        </Pressable>
-        <Pressable style={s.tab} onPress={() => setTab('items')}>
-          <Text style={[s.tabText, tab === 'items' && s.tabActive]}>Items</Text>
-        </Pressable>
-      </View>
+        <BlurView intensity={80} tint="systemChromeMaterialDark" style={s.tabbar}>
+          <Pressable style={({ pressed }) => [s.tab, pressed && s.tabPressed]} onPress={() => setTab('today')}>
+            <Text style={[s.tabText, tab === 'today' && s.tabActive]}>Today</Text>
+          </Pressable>
+          <Pressable
+            onPressIn={() => springMic(0.86)}
+            onPressOut={() => springMic(1)}
+            onPress={() => setMemoOpen(true)}
+            hitSlop={12}
+          >
+            <Animated.View style={[s.mic, { transform: [{ scale: micScale }] }]}>
+              <Text style={s.micIcon}>🎤</Text>
+            </Animated.View>
+          </Pressable>
+          <Pressable style={({ pressed }) => [s.tab, pressed && s.tabPressed]} onPress={() => setTab('items')}>
+            <Text style={[s.tabText, tab === 'items' && s.tabActive]}>Items</Text>
+          </Pressable>
+        </BlurView>
 
-      <Modal
-        visible={memoOpen}
-        animationType="slide"
-        presentationStyle="pageSheet"
-        onRequestClose={() => setMemoOpen(false)}
-      >
-        <MemoFlow onDone={() => setMemoOpen(false)} />
-      </Modal>
+        <Modal
+          visible={memoOpen}
+          animationType="slide"
+          presentationStyle="pageSheet"
+          onRequestClose={() => setMemoOpen(false)}
+        >
+          <MemoFlow onDone={() => setMemoOpen(false)} />
+        </Modal>
 
-      <Modal
-        visible={!!detailId}
-        animationType="slide"
-        presentationStyle="pageSheet"
-        onRequestClose={() => setDetailId(null)}
-      >
-        {detailId && <MemoDetail memoId={detailId} onClose={() => setDetailId(null)} />}
-      </Modal>
-    </SafeAreaView>
+        <Modal
+          visible={!!detailId}
+          animationType="slide"
+          presentationStyle="pageSheet"
+          onRequestClose={() => setDetailId(null)}
+        >
+          {detailId && <MemoDetail memoId={detailId} onClose={() => setDetailId(null)} />}
+        </Modal>
+      </SafeAreaView>
     </SafeAreaProvider>
   );
 }
@@ -70,11 +85,14 @@ const s = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 18,
-    paddingVertical: 10,
+    paddingHorizontal: 20,
+    paddingTop: 6,
+    paddingBottom: 4,
   },
-  brand: { color: C.text, fontSize: 19, fontWeight: '700', letterSpacing: 0.3 },
-  offline: { color: C.danger, fontSize: 12.5 },
+  brandRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  dot: { width: 9, height: 9, borderRadius: 5, backgroundColor: C.accent },
+  brand: { color: C.text, fontSize: 22, fontWeight: '700', letterSpacing: -0.5 },
+  offline: { color: C.danger, fontSize: 12.5, fontWeight: '600' },
   tabbar: {
     position: 'absolute',
     left: 0,
@@ -83,28 +101,29 @@ const s = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-around',
-    backgroundColor: C.panel,
-    borderTopColor: C.border,
-    borderTopWidth: 1,
-    paddingBottom: 26,
-    paddingTop: 10,
+    borderTopColor: C.hairline,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    paddingBottom: 30,
+    paddingTop: 12,
+    overflow: 'hidden',
   },
-  tab: { padding: 10, width: 110, alignItems: 'center' },
-  tabText: { color: C.muted, fontSize: 14.5 },
+  tab: { paddingVertical: 8, paddingHorizontal: 24, borderRadius: 12, width: 118, alignItems: 'center' },
+  tabPressed: { opacity: 0.55 },
+  tabText: { color: C.muted, fontSize: 15, letterSpacing: -0.2 },
   tabActive: { color: C.text, fontWeight: '600' },
-  // the product thesis in one control: capture is always one tap away
+  // capture is always one tap away — the product thesis in one control
   mic: {
-    width: 66,
-    height: 66,
-    borderRadius: 33,
+    width: 62,
+    height: 62,
+    borderRadius: 31,
     backgroundColor: C.accent,
     alignItems: 'center',
     justifyContent: 'center',
-    marginTop: -30,
-    shadowColor: '#000',
-    shadowOpacity: 0.4,
-    shadowRadius: 12,
+    marginTop: -32,
+    shadowColor: C.accent,
+    shadowOpacity: 0.5,
+    shadowRadius: 16,
     shadowOffset: { width: 0, height: 6 },
   },
-  micIcon: { fontSize: 26 },
+  micIcon: { fontSize: 25 },
 });

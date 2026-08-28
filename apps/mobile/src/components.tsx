@@ -28,11 +28,26 @@ export const TYPE_ICONS: Record<string, string> = {
   shopping: '🛒',
 };
 
-export function ItemRow({ item, onPress }: { item: ItemWithSource; onPress?: () => void }) {
+export function ItemRow({
+  item,
+  onPress,
+  first,
+  last,
+}: {
+  item: ItemWithSource;
+  onPress?: () => void;
+  first?: boolean;
+  last?: boolean;
+}) {
   const due = fmtDue(item.due_at);
   const who = item.counterparty_name ?? item.counterparty_email;
   return (
-    <Pressable style={s.row} onPress={onPress} disabled={!onPress}>
+    <Pressable
+      style={({ pressed }) => [s.row, first && s.first, last && s.last, pressed && onPress ? s.pressed : null]}
+      onPress={onPress}
+      disabled={!onPress}
+    >
+      {!first && <View style={s.sep} />}
       <Text style={s.icon}>{TYPE_ICONS[item.type] ?? '•'}</Text>
       <View style={s.main}>
         <Text style={s.title} numberOfLines={1}>
@@ -42,7 +57,11 @@ export function ItemRow({ item, onPress }: { item: ItemWithSource; onPress?: () 
           {[who, item.source_kind === 'memo' ? 'voice memo' : item.source?.subject].filter(Boolean).join(' · ')}
         </Text>
       </View>
-      {due && <Text style={[s.due, due.overdue && s.overdue]}>{due.label}</Text>}
+      {due && (
+        <View style={[s.duePill, due.overdue && s.duePillOver]}>
+          <Text style={[s.due, due.overdue && s.overdue]}>{due.label}</Text>
+        </View>
+      )}
     </Pressable>
   );
 }
@@ -51,27 +70,26 @@ const s = StyleSheet.create({
   row: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
+    gap: 11,
     backgroundColor: C.panel,
-    borderColor: C.border,
-    borderWidth: 1,
-    borderRadius: 12,
-    padding: 12,
-    marginBottom: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 13,
   },
-  icon: { fontSize: 18 },
+  first: { borderTopLeftRadius: 16, borderTopRightRadius: 16 },
+  last: { borderBottomLeftRadius: 16, borderBottomRightRadius: 16 },
+  pressed: { backgroundColor: C.panel2 },
+  sep: { position: 'absolute', top: 0, left: 52, right: 0, height: StyleSheet.hairlineWidth, backgroundColor: C.hairline },
+  icon: { fontSize: 17 },
   main: { flex: 1, gap: 2 },
-  title: { color: C.text, fontWeight: '600', fontSize: 15 },
-  sub: { color: C.muted, fontSize: 12.5 },
-  due: {
-    color: C.muted,
-    fontSize: 11.5,
-    borderColor: C.border,
-    borderWidth: 1,
+  title: { color: C.text, fontWeight: '600', fontSize: 15.5, letterSpacing: -0.2 },
+  sub: { color: C.muted, fontSize: 12.5, letterSpacing: -0.1 },
+  duePill: {
+    backgroundColor: C.fill,
     borderRadius: 999,
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    overflow: 'hidden',
+    paddingHorizontal: 9,
+    paddingVertical: 3,
   },
-  overdue: { color: '#f2b8b2', borderColor: C.danger },
+  duePillOver: { backgroundColor: C.dangerBg },
+  due: { color: C.muted, fontSize: 11.5, fontWeight: '600', fontVariant: ['tabular-nums'] },
+  overdue: { color: C.danger },
 });

@@ -35,9 +35,14 @@ export function TodayScreen({
           <Text style={s.h2}>Recently captured</Text>
         </View>
       }
-      ListEmptyComponent={<Text style={s.empty}>Nothing yet - tap the mic and say it.</Text>}
-      renderItem={({ item }) => (
-        <ItemRow item={item} onPress={item.source_memo_id ? () => onOpenMemoItem(item.source_memo_id!) : undefined} />
+      ListEmptyComponent={<Text style={s.empty}>Nothing yet — tap the mic and say it.</Text>}
+      renderItem={({ item, index }) => (
+        <ItemRow
+          item={item}
+          first={index === 0}
+          last={index === recent.length - 1}
+          onPress={item.source_memo_id ? () => onOpenMemoItem(item.source_memo_id!) : undefined}
+        />
       )}
     />
   );
@@ -56,34 +61,40 @@ export function ItemsScreen({
       data={sorted}
       keyExtractor={(i) => i.id}
       contentContainerStyle={s.pad}
+      ListHeaderComponent={<Text style={s.h2}>All items</Text>}
       ListEmptyComponent={<Text style={s.empty}>No items yet.</Text>}
-      renderItem={({ item }) => (
-        <ItemRow item={item} onPress={item.source_memo_id ? () => onOpenMemoItem(item.source_memo_id!) : undefined} />
+      renderItem={({ item, index }) => (
+        <ItemRow
+          item={item}
+          first={index === 0}
+          last={index === sorted.length - 1}
+          onPress={item.source_memo_id ? () => onOpenMemoItem(item.source_memo_id!) : undefined}
+        />
       )}
     />
   );
 }
 
 const s = StyleSheet.create({
-  pad: { padding: 16, paddingBottom: 120 },
-  stats: { flexDirection: 'row', gap: 10 },
+  pad: { padding: 16, paddingBottom: 130 },
+  stats: { flexDirection: 'row', gap: 12 },
   stat: {
     flex: 1,
     backgroundColor: C.panel,
-    borderColor: C.border,
-    borderWidth: 1,
-    borderRadius: 12,
-    padding: 14,
+    borderRadius: 18,
+    padding: 18,
   },
-  statN: { color: C.text, fontSize: 26, fontWeight: '700' },
-  statL: { color: C.muted, fontSize: 12.5 },
+  statN: { color: C.text, fontSize: 38, fontWeight: '700', letterSpacing: -1.4, fontVariant: ['tabular-nums'] },
+  statL: { color: C.muted, fontSize: 13.5, letterSpacing: -0.2, marginTop: 2 },
   h2: {
     color: C.muted,
-    fontSize: 12,
+    fontSize: 12.5,
+    fontWeight: '600',
     textTransform: 'uppercase',
-    letterSpacing: 1,
-    marginTop: 20,
+    letterSpacing: 0.6,
+    marginTop: 26,
     marginBottom: 10,
+    marginLeft: 4,
   },
-  empty: { color: C.muted, padding: 24, textAlign: 'center' },
+  empty: { color: C.muted, padding: 26, textAlign: 'center', backgroundColor: C.panel, borderRadius: 16 },
 });

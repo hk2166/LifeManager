@@ -22,7 +22,7 @@ export function MemoDetail({ memoId, onClose }: { memoId: string; onClose: () =>
         </Pressable>
       </View>
       <Pressable
-        style={s.play}
+        style={({ pressed }) => [s.play, pressed && { opacity: 0.7 }]}
         onPress={() => {
           if (status.playing) player.pause();
           else {
