@@ -263,7 +263,7 @@ export function AskView({ onOpen }: { onOpen: (t: DrawerTarget) => void }) {
   );
 }
 
-export function SourceDrawer({ target, onClose }: { target: DrawerTarget; onClose: () => void }) {
+export function SourceDrawer({ target, open, onClose }: { target: DrawerTarget; open: boolean; onClose: () => void }) {
   const [msg, setMsg] = useState<(SourceMessage & { subject?: string | null }) | null>(null);
   const [memo, setMemo] = useState<{ transcript: string | null } | null>(null);
   const [nudge, setNudge] = useState<NudgeDraft | null>(null);
@@ -301,10 +301,10 @@ export function SourceDrawer({ target, onClose }: { target: DrawerTarget; onClos
   };
 
   return (
-    <aside className="drawer">
+    <aside className={open ? 'drawer open' : 'drawer'} role="dialog" aria-modal="true">
       <div className="drawer-head">
         <strong>{target.title}</strong>
-        <button className="ghost" onClick={onClose}>
+        <button className="ghost" onClick={onClose} aria-label="Close">
           ✕
         </button>
       </div>
