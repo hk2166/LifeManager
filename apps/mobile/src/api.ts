@@ -1,13 +1,87 @@
 import { useEffect, useState } from 'react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { File, UploadType } from 'expo-file-system';
 import type { ItemType, ItemWithSource, Memo, MemoResult } from 'shared';
 
 export const API = process.env.EXPO_PUBLIC_API_URL ?? 'http://localhost:3001';
 
-export async function getJSON<T>(path: string): Promise<T> {
-  const r = await fetch(`${API}${path}`);
-  if (!r.ok) throw new Error(`${path}: ${r.status}`);
+// ---- auth token (persisted in AsyncStorage, reactive) ----
+const TKEY = 'lifeos_token';
+let token: string | null = null;
+let loaded = false;
+const listeners = new Set<() => void>();
+const notify = () => listeners.forEach((l) => l());
+
+export async function bootstrapAuth() {
+  try {
+    token = await AsyncStorage.getItem(TKEY);
+  } catch {}
+  loaded = true;
+  notify();
+}
+async function setToken(t: string | null) {
+  token = t;
+  try {
+    if (t) await AsyncStorage.setItem(TKEY, t);
+    else await AsyncStorage.removeItem(TKEY);
+  } catch {}
+  notify();
+}
+export const getToken = () => token;
+export function useAuth() {
+  const [, force] = useState(0);
+  useEffect(() => {
+    const l = () => force((x) => x + 1);
+    listeners.add(l);
+    return () => {
+      listeners.delete(l);
+    };
+  }, []);
+  return { token, loaded };
+}
+export const logout = () => setToken(null);
+
+function headers(json = false): Record<string, string> {
+  const h: Record<string, string> = {};
+  if (json) h['Content-Type'] = 'application/json';
+  if (token) h.Authorization = `Bearer ${token}`;
+  return h;
+}
+
+async function parse<T>(r: Response, path: string): Promise<T> {
+  if (r.status === 401) {
+    await setToken(null);
+    throw new Error('session expired');
+  }
+  if (!r.ok) {
+    const body = await r.json().catch(() => null as { error?: string } | null);
+    throw new Error(body?.error ?? `${path}: ${r.status}`);
+  }
   return r.json();
+}
+
+export async function getJSON<T>(path: string): Promise<T> {
+  return parse(await fetch(`${API}${path}`, { headers: headers() }), path);
+}
+export async function postJSON<T>(path: string, body: unknown): Promise<T> {
+  return parse(await fetch(`${API}${path}`, { method: 'POST', headers: headers(true), body: JSON.stringify(body) }), path);
+}
+
+export interface AuthUser {
+  id: string;
+  email: string;
+  name: string;
+}
+type AuthResponse = { token: string; user: AuthUser };
+export async function login(email: string, password: string): Promise<AuthUser> {
+  const r = await postJSON<AuthResponse>('/api/auth/login', { email, password });
+  await setToken(r.token);
+  return r.user;
+}
+export async function register(email: string, password: string, name: string): Promise<AuthUser> {
+  const r = await postJSON<AuthResponse>('/api/auth/register', { email, password, name });
+  await setToken(r.token);
+  return r.user;
 }
 
 export function usePoll<T>(path: string, ms = 4000): { data: T | null; error: string | null } {
@@ -41,19 +115,18 @@ export async function uploadMemo(uri: string): Promise<MemoResult> {
     uploadType: UploadType.MULTIPART,
     fieldName: 'audio',
     mimeType: 'audio/m4a',
+    headers: token ? { Authorization: `Bearer ${token}` } : undefined,
   });
+  if (res.status === 401) {
+    await setToken(null);
+    throw new Error('session expired');
+  }
   if (res.status < 200 || res.status >= 300) throw new Error(`upload failed: ${res.status} ${res.body}`);
   return JSON.parse(res.body) as MemoResult;
 }
 
 export async function confirmMemo(id: string, type: ItemType): Promise<MemoResult> {
-  const r = await fetch(`${API}/api/memos/${id}/confirm`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ type }),
-  });
-  if (!r.ok) throw new Error(`confirm failed: ${r.status}`);
-  return r.json();
+  return postJSON<MemoResult>(`/api/memos/${id}/confirm`, { type });
 }
 
 export const getMemo = (id: string) => getJSON<Memo>(`/api/memos/${id}`);

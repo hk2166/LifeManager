@@ -1,15 +1,40 @@
-import { useRef, useState } from 'react';
-import { Animated, Modal, Pressable, StyleSheet, Text, View } from 'react-native';
+import { useEffect, useRef, useState } from 'react';
+import { ActivityIndicator, Animated, Modal, Pressable, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { BlurView } from 'expo-blur';
 import { StatusBar } from 'expo-status-bar';
-import { usePoll, type ItemWithSource } from './src/api';
+import { bootstrapAuth, logout, useAuth, usePoll, type ItemWithSource } from './src/api';
+import { AuthScreen } from './src/AuthScreen';
 import { MemoDetail } from './src/MemoDetail';
 import { MemoFlow } from './src/MemoFlow';
 import { ItemsScreen, TodayScreen } from './src/screens';
 import { C } from './src/theme';
 
 export default function App() {
+  const { token, loaded } = useAuth();
+  useEffect(() => {
+    bootstrapAuth();
+  }, []);
+
+  if (!loaded) {
+    return (
+      <View style={{ flex: 1, backgroundColor: C.bg, alignItems: 'center', justifyContent: 'center' }}>
+        <ActivityIndicator color={C.accent} />
+      </View>
+    );
+  }
+  if (!token) {
+    return (
+      <SafeAreaProvider>
+        <StatusBar style="light" />
+        <AuthScreen />
+      </SafeAreaProvider>
+    );
+  }
+  return <Home />;
+}
+
+function Home() {
   const [tab, setTab] = useState<'today' | 'items'>('today');
   const [memoOpen, setMemoOpen] = useState(false);
   const [detailId, setDetailId] = useState<string | null>(null);
@@ -29,7 +54,12 @@ export default function App() {
             <View style={s.dot} />
             <Text style={s.brand}>Life OS</Text>
           </View>
-          {error && <Text style={s.offline}>offline</Text>}
+          <View style={s.headerRight}>
+            {error && <Text style={s.offline}>offline</Text>}
+            <Pressable onPress={logout} hitSlop={10} style={({ pressed }) => pressed && { opacity: 0.5 }}>
+              <Text style={s.signout}>Sign out</Text>
+            </Pressable>
+          </View>
         </View>
 
         {tab === 'today' ? (
@@ -92,7 +122,9 @@ const s = StyleSheet.create({
   brandRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   dot: { width: 9, height: 9, borderRadius: 5, backgroundColor: C.accent },
   brand: { color: C.text, fontSize: 22, fontWeight: '700', letterSpacing: -0.5 },
+  headerRight: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   offline: { color: C.danger, fontSize: 12.5, fontWeight: '600' },
+  signout: { color: C.muted, fontSize: 14.5, fontWeight: '500' },
   tabbar: {
     position: 'absolute',
     left: 0,
