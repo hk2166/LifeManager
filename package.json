@@ -7,6 +7,9 @@
     "db:migrate": "npm run migrate -w api",
     "db:seed": "npm run seed -w api",
     "db:reset": "npm run reset -w api",
+    "extract": "npm run extract -w api",
+    "eval:extraction": "npm run eval:extraction -w api",
+    "eval:memos": "npm run eval:memos -w api",
     "typecheck": "npm run typecheck -w api && npm run typecheck -w web"
   },
   "devDependencies": {

@@ -8,6 +8,9 @@
     "seed": "tsx seed/seed.ts",
     "reset": "tsx src/db/reset.ts",
     "ingest:backfill": "tsx src/ingest/backfill.ts",
+    "extract": "tsx src/ai/run-extract.ts",
+    "eval:extraction": "tsx src/ai/eval-extraction.ts",
+    "eval:memos": "tsx src/ai/eval-memos.ts",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
