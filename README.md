@@ -23,9 +23,22 @@ npm run dev               # api :3001 + dashboard :5173
 
 Mobile: `npm run start -w mobile`, then open in the iOS simulator. Set `EXPO_PUBLIC_API_URL` to `http://<your-LAN-IP>:3001` when running on a physical phone.
 
-## Status after the initial build
+## Status: AI layer validated live
 
-All P0 **and P1/P2 code** is in; everything typechecks. DB + API + dashboard (incl. Today's meeting card, Ask view, digest card, nudge drafts) verified live against the seeded corpus; LLM/audio paths return clean "key not set" errors until `.env` is filled.
+Full pipeline verified end-to-end with real API keys against the seeded corpus:
+
+- **Commitment extraction (T-12): 90.9% precision / 90.9% recall** — passes both ACs (recall ≥80%, ≤2 spurious on negatives). `npm run eval:extraction`.
+- **Memo classification (T-20): 93.3% top-1 accuracy; 95.5% silent-routing precision at the 0.8 threshold** — passes both ACs. `npm run eval:memos`.
+- **Ask-memory, pre-meeting brief, end-of-day digest** — all confirmed live (correct answers, source links, clean output). Dashboard renders 6 owed / 5 waiting-on with source drawers and working briefs.
+- Google connected to a real inbox (read-only); 564 real emails embedded so Ask searches real + seed.
+
+Two robustness fixes landed during validation: `structured()` now recovers stringified/double-encoded tool output (this alone took extraction recall from 45% → 91%), and briefs coerce model bullets to a clean array.
+
+---
+
+## Earlier build notes
+
+All P0 **and P1/P2 code** is in; everything typechecks.
 
 - Done: T-01…T-05 (scaffold, db, seed corpus - `npm run db:reset` gives 21 threads / 38 messages / 5 events), T-06…T-10 (OAuth, Gmail backfill + 2-min live sync, calendar sync, source links), T-11…T-17 (extractor + eval, embeddings, ask-memory, brief, digest, anticipation), T-18…T-20 (memo pipeline + eval), T-21…T-24 (dashboard, verified in browser), T-25…T-28 (Expo app - typechecked and Metro-bundled, not yet run on a device), T-34 (nudge drafts, copy-only). The API also runs an auto-tick: every 2 min it syncs mail + calendar, then incrementally extracts/embeds new threads - so a live "email arrives → commitment appears" moment needs zero manual steps.
 - Humans needed for: Google Cloud console setup ([docs/GOOGLE_SETUP.md](docs/GOOGLE_SETUP.md)), API keys, first simulator/device run with a real microphone, T-29/T-30 demo tuning + rehearsal. Roadmap slide for the closer: [docs/roadmap-slide.html](docs/roadmap-slide.html).
