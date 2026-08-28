@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import type { ItemWithSource } from 'shared';
 import { usePoll } from './api';
-import { AskView, ItemList, SourceDrawer, TodayView } from './views';
+import { AskView, ItemList, SourceDrawer, TodayView, type DrawerTarget } from './views';
 
 const TABS = [
   { id: 'today', label: 'Today' },
@@ -14,7 +14,7 @@ type Tab = (typeof TABS)[number]['id'];
 
 export default function App() {
   const [tab, setTab] = useState<Tab>('today');
-  const [open, setOpen] = useState<ItemWithSource | null>(null);
+  const [open, setOpen] = useState<DrawerTarget | null>(null);
   const { data: items, error } = usePoll<ItemWithSource[]>('/api/items');
 
   return (
@@ -41,16 +41,11 @@ export default function App() {
           />
         )}
         {tab === 'waiting' && (
-          <ItemList
-            items={items ?? []}
-            direction="owed_to_me"
-            empty="Not waiting on anyone."
-            onOpen={setOpen}
-          />
+          <ItemList items={items ?? []} direction="owed_to_me" empty="Not waiting on anyone." onOpen={setOpen} />
         )}
-        {tab === 'ask' && <AskView />}
+        {tab === 'ask' && <AskView onOpen={setOpen} />}
       </main>
-      {open && <SourceDrawer item={open} onClose={() => setOpen(null)} />}
+      {open && <SourceDrawer target={open} onClose={() => setOpen(null)} />}
     </div>
   );
 }
