@@ -5,7 +5,8 @@ import { fileURLToPath } from 'node:url';
 export const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../..');
 dotenv.config({ path: path.join(REPO_ROOT, '.env') });
 
-export const PORT = Number(process.env.PORT ?? 3001);
+// API_PORT, not PORT: dev-server launchers inject PORT for the frontend and the api must not inherit it
+export const PORT = Number(process.env.API_PORT ?? 3001);
 export const DATABASE_URL =
   process.env.DATABASE_URL ?? 'postgres://postgres:postgres@localhost:5432/lifeos';
 
