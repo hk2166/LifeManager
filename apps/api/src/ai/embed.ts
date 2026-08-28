@@ -40,15 +40,15 @@ export interface Hit {
   subject: string | null;
 }
 
-export async function searchMessages(query: string, k = 8): Promise<Hit[]> {
+export async function searchMessages(query: string, userId: string, k = 8): Promise<Hit[]> {
   const [vec] = await embedTexts([query]);
   const { rows } = await q<Hit>(
     `SELECT m.id, m.from_name, m.from_email, m.sent_at, m.body_text, t.subject
      FROM messages m JOIN threads t ON t.id = m.thread_id
-     WHERE m.embedding IS NOT NULL
+     WHERE m.user_id = $2 AND m.embedding IS NOT NULL
      ORDER BY m.embedding <=> $1::vector
-     LIMIT $2`,
-    [JSON.stringify(vec), k]
+     LIMIT $3`,
+    [JSON.stringify(vec), userId, k]
   );
   return rows;
 }

@@ -2,7 +2,12 @@ import { pool } from '../src/db/index';
 import { DEMO_OWNER_EMAIL, DEMO_OWNER_NAME } from '../src/config';
 import { buildCorpus, type SeedPerson } from './corpus';
 
-export async function runSeed() {
+// Seed ids are namespaced per user so every user can hold the same demo story
+// without primary-key collisions. Real Gmail ids are already globally unique.
+export const sid = (userId: string, id: string) => `${userId}::${id}`;
+
+// Seed the demo corpus for one user. Called on registration and by the CLI/eval.
+export async function runSeed(userId: string) {
   const owner: SeedPerson = { name: DEMO_OWNER_NAME, email: DEMO_OWNER_EMAIL };
   const { threads, events } = buildCorpus(owner);
   const now = Date.now();
@@ -23,19 +28,19 @@ export async function runSeed() {
     });
     const last = new Date(Math.max(...sentTimes.map((d) => d.getTime())));
     await pool.query(
-      `INSERT INTO threads (id, subject, last_message_at) VALUES ($1,$2,$3)
+      `INSERT INTO threads (id, user_id, subject, last_message_at) VALUES ($1,$2,$3,$4)
        ON CONFLICT (id) DO UPDATE SET subject = EXCLUDED.subject, last_message_at = EXCLUDED.last_message_at`,
-      [t.id, t.subject, last]
+      [sid(userId, t.id), userId, t.subject, last]
     );
     for (let i = 0; i < t.messages.length; i++) {
       const m = t.messages[i];
       const from = m.from === 'owner' ? owner : m.from;
       const to = [...participants.values()].filter((p) => p.email !== from.email).map((p) => p.email);
       await pool.query(
-        `INSERT INTO messages (id, thread_id, from_name, from_email, to_emails, sent_at, snippet, body_text)
-         VALUES ($1,$2,$3,$4,$5,$6,$7,$8)
+        `INSERT INTO messages (id, user_id, thread_id, from_name, from_email, to_emails, sent_at, snippet, body_text)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)
          ON CONFLICT (id) DO UPDATE SET body_text = EXCLUDED.body_text, sent_at = EXCLUDED.sent_at`,
-        [`${t.id}-m${i + 1}`, t.id, from.name, from.email, to, sentTimes[i], m.body.slice(0, 120), m.body]
+        [sid(userId, `${t.id}-m${i + 1}`), userId, sid(userId, t.id), from.name, from.email, to, sentTimes[i], m.body.slice(0, 120), m.body]
       );
       msgCount++;
     }
@@ -47,19 +52,34 @@ export async function runSeed() {
     start.setHours(e.hour, 0, 0, 0);
     const end = new Date(start.getTime() + e.duration_min * 60_000);
     await pool.query(
-      `INSERT INTO events (id, title, start_at, end_at, attendees) VALUES ($1,$2,$3,$4,$5)
+      `INSERT INTO events (id, user_id, title, start_at, end_at, attendees) VALUES ($1,$2,$3,$4,$5,$6)
        ON CONFLICT (id) DO UPDATE SET title = EXCLUDED.title, start_at = EXCLUDED.start_at,
          end_at = EXCLUDED.end_at, attendees = EXCLUDED.attendees`,
-      [e.id, e.title, start, end, JSON.stringify(e.attendees)]
+      [sid(userId, e.id), userId, e.title, start, end, JSON.stringify(e.attendees)]
     );
   }
 
-  console.log(`seeded ${threads.length} threads, ${msgCount} messages, ${events.length} events`);
-  console.log(`planted commitments: ${planted.owed_by_me} owed_by_me, ${planted.owed_to_me} owed_to_me`);
+  console.log(`seeded ${threads.length} threads, ${msgCount} messages, ${events.length} events for user ${userId}`);
+  return { threads: threads.length, messages: msgCount, events: events.length, planted };
 }
 
+// CLI: seed for a --user <id>, or a throwaway demo user if none given.
 if (process.argv[1]?.endsWith('seed.ts')) {
-  runSeed()
+  const flagIdx = process.argv.indexOf('--user');
+  const userId = flagIdx >= 0 ? process.argv[flagIdx + 1] : null;
+  (async () => {
+    let uid = userId;
+    if (!uid) {
+      const { rows } = await pool.query(
+        `INSERT INTO users (email, password_hash, name) VALUES ($1,$2,$3)
+         ON CONFLICT (email) DO UPDATE SET name = EXCLUDED.name RETURNING id`,
+        [DEMO_OWNER_EMAIL, 'x', DEMO_OWNER_NAME]
+      );
+      uid = rows[0].id;
+      console.log(`seeding for demo user ${DEMO_OWNER_EMAIL} (${uid})`);
+    }
+    await runSeed(uid!);
+  })()
     .then(() => pool.end())
     .catch((e) => {
       console.error(e);

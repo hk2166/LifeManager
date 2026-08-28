@@ -20,8 +20,8 @@ const TOOL: ToolSpec = {
   },
 };
 
-export async function askMemory(question: string) {
-  const hits = await searchMessages(question, 8);
+export async function askMemory(question: string, userId: string) {
+  const hits = await searchMessages(question, userId, 8);
   if (!hits.length) {
     return { answer: 'No indexed email to search yet - run the embed step first.', confident: false, sources: [] };
   }

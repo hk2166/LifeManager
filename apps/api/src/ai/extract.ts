@@ -97,7 +97,7 @@ export async function extractThread(threadId: string): Promise<ExtractedCommitme
   }));
 }
 
-async function persist(threadId: string, commitments: ExtractedCommitment[], lastMessageId: string) {
+async function persist(threadId: string, commitments: ExtractedCommitment[], lastMessageId: string, userId: string) {
   // re-extraction of a changed thread replaces its commitments instead of duplicating them
   await q(
     `DELETE FROM items WHERE source_kind = 'email' AND type = 'commitment'
@@ -108,9 +108,9 @@ async function persist(threadId: string, commitments: ExtractedCommitment[], las
     if (c.confidence < 0.5) continue;
     const due = c.due_iso && !Number.isNaN(Date.parse(c.due_iso)) ? new Date(c.due_iso) : null;
     await q(
-      `INSERT INTO items (type, direction, title, counterparty_name, counterparty_email, due_at, confidence, source_kind, source_message_id)
-       VALUES ('commitment', $1, $2, $3, $4, $5, $6, 'email', $7)`,
-      [c.direction, c.title, c.counterparty_name, c.counterparty_email.toLowerCase(), due, c.confidence, c.source_message_id]
+      `INSERT INTO items (user_id, type, direction, title, counterparty_name, counterparty_email, due_at, confidence, source_kind, source_message_id)
+       VALUES ($8, 'commitment', $1, $2, $3, $4, $5, $6, 'email', $7)`,
+      [c.direction, c.title, c.counterparty_name, c.counterparty_email.toLowerCase(), due, c.confidence, c.source_message_id, userId]
     );
   }
   await q(
@@ -127,12 +127,12 @@ export async function extractAll(force = false) {
     await q('DELETE FROM extraction_state');
   }
   // new threads, plus threads whose latest message changed since last extraction
-  const { rows: threads } = await q<{ id: string; last_id: string }>(
-    `SELECT t.id, last.id AS last_id
+  const { rows: threads } = await q<{ id: string; last_id: string; user_id: string }>(
+    `SELECT t.id, t.user_id, last.id AS last_id
      FROM threads t
      JOIN LATERAL (SELECT m.id FROM messages m WHERE m.thread_id = t.id ORDER BY m.sent_at DESC LIMIT 1) last ON true
      LEFT JOIN extraction_state es ON es.thread_id = t.id
-     WHERE es.thread_id IS NULL OR es.last_message_id <> last.id`
+     WHERE t.user_id IS NOT NULL AND (es.thread_id IS NULL OR es.last_message_id <> last.id)`
   );
   // Pre-filter: a thread can only hold a commitment involving the owner if the
   // owner participated or a real human wrote. All-automated threads are skipped
@@ -147,12 +147,12 @@ export async function extractAll(force = false) {
     );
     const worthReading = senders.some((s) => s.from_email === owner || !isAutomatedSender(s.from_email));
     if (!worthReading) {
-      await persist(t.id, [], t.last_id);
+      await persist(t.id, [], t.last_id, t.user_id);
       skipped++;
       continue;
     }
     const commitments = await extractThread(t.id);
-    await persist(t.id, commitments, t.last_id);
+    await persist(t.id, commitments, t.last_id, t.user_id);
     found += commitments.filter((c) => c.confidence >= 0.5).length;
     console.log(`${t.id}: ${commitments.length} commitment(s)`);
   }

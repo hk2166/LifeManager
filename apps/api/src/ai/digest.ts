@@ -14,16 +14,19 @@ const TOOL: ToolSpec = {
   },
 };
 
-export async function generateDigest() {
+export async function generateDigest(userId: string) {
   const { rows: newToday } = await q(
-    `SELECT type, direction, title FROM items WHERE created_at >= date_trunc('day', now()) ORDER BY created_at`
+    `SELECT type, direction, title FROM items WHERE user_id = $1 AND created_at >= date_trunc('day', now()) ORDER BY created_at`,
+    [userId]
   );
   const { rows: open } = await q(
     `SELECT direction, title, due_at FROM items
-     WHERE status = 'open' AND type = 'commitment' ORDER BY due_at NULLS LAST LIMIT 12`
+     WHERE user_id = $1 AND status = 'open' AND type = 'commitment' ORDER BY due_at NULLS LAST LIMIT 12`,
+    [userId]
   );
   const { rows: upcoming } = await q(
-    `SELECT title, start_at FROM events WHERE start_at BETWEEN now() AND now() + interval '36 hours' ORDER BY start_at LIMIT 5`
+    `SELECT title, start_at FROM events WHERE user_id = $1 AND start_at BETWEEN now() AND now() + interval '36 hours' ORDER BY start_at LIMIT 5`,
+    [userId]
   );
   const t0 = Date.now();
   const out = await structured<{ digest: string }>({

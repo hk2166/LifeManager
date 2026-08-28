@@ -57,8 +57,8 @@ export function extractBody(payload: gmail_v1.Schema$MessagePart): string {
 const header = (p: gmail_v1.Schema$MessagePart, name: string) =>
   p.headers?.find((h) => h.name?.toLowerCase() === name.toLowerCase())?.value ?? null;
 
-async function ingestMessage(gmail: gmail_v1.Gmail, id: string): Promise<boolean> {
-  const exists = await q('SELECT 1 FROM messages WHERE id = $1', [id]);
+async function ingestMessage(gmail: gmail_v1.Gmail, id: string, userId: string): Promise<boolean> {
+  const exists = await q('SELECT 1 FROM messages WHERE id = $1 AND user_id = $2', [id, userId]);
   if (exists.rows.length) return false; // idempotent: re-runs skip known messages
 
   const { data } = await gmail.users.messages.get({ userId: 'me', id, format: 'full' });
@@ -74,23 +74,23 @@ async function ingestMessage(gmail: gmail_v1.Gmail, id: string): Promise<boolean
   const threadId = data.threadId ?? id;
 
   await q(
-    `INSERT INTO threads (id, subject, last_message_at) VALUES ($1,$2,$3)
+    `INSERT INTO threads (id, user_id, subject, last_message_at) VALUES ($1,$2,$3,$4)
      ON CONFLICT (id) DO UPDATE SET
        subject = COALESCE(threads.subject, EXCLUDED.subject),
        last_message_at = GREATEST(threads.last_message_at, EXCLUDED.last_message_at)`,
-    [threadId, header(p, 'Subject'), sentAt]
+    [threadId, userId, header(p, 'Subject'), sentAt]
   );
   await q(
-    `INSERT INTO messages (id, thread_id, from_name, from_email, to_emails, sent_at, snippet, body_text)
-     VALUES ($1,$2,$3,$4,$5,$6,$7,$8) ON CONFLICT (id) DO NOTHING`,
-    [id, threadId, from.name, from.email, to, sentAt, data.snippet ?? body.slice(0, 120), body]
+    `INSERT INTO messages (id, user_id, thread_id, from_name, from_email, to_emails, sent_at, snippet, body_text)
+     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9) ON CONFLICT (id) DO NOTHING`,
+    [id, userId, threadId, from.name, from.email, to, sentAt, data.snippet ?? body.slice(0, 120), body]
   );
   return true;
 }
 
 // cheap 2-min poll: idempotent fast-path makes re-listing recent mail nearly free
-export async function syncRecent() {
-  const gmail = google.gmail({ version: 'v1', auth: await getAuthed() });
+export async function syncRecent(userId: string) {
+  const gmail = google.gmail({ version: 'v1', auth: await getAuthed(userId) });
   const list = await gmail.users.messages.list({
     userId: 'me',
     q: 'newer_than:2d -in:spam -in:trash',
@@ -98,14 +98,14 @@ export async function syncRecent() {
   });
   let ingested = 0;
   for (const m of list.data.messages ?? []) {
-    if (await ingestMessage(gmail, m.id!)) ingested++;
+    if (await ingestMessage(gmail, m.id!, userId)) ingested++;
   }
   if (ingested) console.log(`sync: ${ingested} new message(s)`);
   return ingested;
 }
 
-export async function backfill(days = 90) {
-  const gmail = google.gmail({ version: 'v1', auth: await getAuthed() });
+export async function backfill(userId: string, days = 90) {
+  const gmail = google.gmail({ version: 'v1', auth: await getAuthed(userId) });
   let pageToken: string | undefined;
   let seen = 0;
   let ingested = 0;
@@ -119,7 +119,7 @@ export async function backfill(days = 90) {
     pageToken = list.data.nextPageToken ?? undefined;
     for (const m of list.data.messages ?? []) {
       seen++;
-      if (await ingestMessage(gmail, m.id!)) ingested++;
+      if (await ingestMessage(gmail, m.id!, userId)) ingested++;
     }
   } while (pageToken);
   console.log(`backfill: ${seen} messages seen, ${ingested} newly ingested`);

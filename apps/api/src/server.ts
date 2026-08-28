@@ -4,8 +4,10 @@ import express from 'express';
 import cors from 'cors';
 import { ANTHROPIC_API_KEY, GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, OPENAI_API_KEY, PORT, REPO_ROOT } from './config';
 import { q } from './db/index';
-import { oauthClient, saveTokens, SCOPES } from './google';
+import { googleConnectedUserIds, oauthClient, saveTokens, SCOPES } from './google';
 import { h } from './http';
+import { authed, hashPassword, requireAuth, signToken, verifyPassword, verifyToken } from './auth';
+import { runSeed } from '../seed/seed';
 import { registerMemoRoutes } from './memos';
 import { syncRecent } from './ingest/gmail';
 import { syncCalendar } from './ingest/calendar';
@@ -51,18 +53,62 @@ app.get('/health', async (req, res) => {
   res.json({ ok: true, db, keys, ...(deep ? { deep } : {}) });
 });
 
-// ---- Google OAuth (T-06) ----
-app.get('/auth/google', (_req, res) => {
-  const url = oauthClient().generateAuthUrl({ access_type: 'offline', prompt: 'consent', scope: SCOPES });
+// ---- auth ----
+const EMAIL_RE = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
+
+app.post('/api/auth/register', h(async (req, res) => {
+  const email = String(req.body?.email ?? '').trim().toLowerCase();
+  const password = String(req.body?.password ?? '');
+  const name = String(req.body?.name ?? '').trim() || email.split('@')[0];
+  if (!EMAIL_RE.test(email)) return res.status(400).json({ error: 'enter a valid email' });
+  if (password.length < 8) return res.status(400).json({ error: 'password must be at least 8 characters' });
+  const exists = await q('SELECT 1 FROM users WHERE email = $1', [email]);
+  if (exists.rows.length) return res.status(409).json({ error: 'an account with that email already exists' });
+  const { rows } = await q(
+    'INSERT INTO users (email, password_hash, name) VALUES ($1,$2,$3) RETURNING id, email, name',
+    [email, await hashPassword(password), name]
+  );
+  const user = rows[0];
+  await runSeed(user.id); // give every new account the demo corpus to explore
+  res.json({ token: signToken(user.id), user: { id: user.id, email: user.email, name: user.name } });
+}));
+
+app.post('/api/auth/login', h(async (req, res) => {
+  const email = String(req.body?.email ?? '').trim().toLowerCase();
+  const password = String(req.body?.password ?? '');
+  const { rows } = await q('SELECT id, email, name, password_hash FROM users WHERE email = $1', [email]);
+  const user = rows[0];
+  if (!user || !(await verifyPassword(password, user.password_hash))) {
+    return res.status(401).json({ error: 'wrong email or password' });
+  }
+  res.json({ token: signToken(user.id), user: { id: user.id, email: user.email, name: user.name } });
+}));
+
+app.get('/api/me', requireAuth, authed(async (req, res) => {
+  const { rows } = await q('SELECT id, email, name FROM users WHERE id = $1', [req.userId]);
+  if (!rows.length) return res.status(404).json({ error: 'not found' });
+  res.json(rows[0]);
+}));
+
+// every /api route below requires a valid token
+app.use('/api', requireAuth);
+
+// ---- Google OAuth (per user, via the token in the state param) ----
+app.get('/auth/google', (req, res) => {
+  const state = String(req.query.token ?? '');
+  if (!state) return res.status(401).send('missing token');
+  const url = oauthClient().generateAuthUrl({ access_type: 'offline', prompt: 'consent', scope: SCOPES, state });
   res.redirect(url);
 });
 
 app.get('/oauth2callback', async (req, res) => {
   try {
     const code = String(req.query.code ?? '');
-    if (!code) return res.status(400).send('missing code');
+    const token = String(req.query.state ?? '');
+    if (!code || !token) return res.status(400).send('missing code or state');
+    const userId = verifyToken(token);
     const { tokens } = await oauthClient().getToken(code);
-    await saveTokens(tokens);
+    await saveTokens(userId, tokens);
     res.send('Google account connected. You can close this tab.');
   } catch (e) {
     console.error(e);
@@ -70,15 +116,17 @@ app.get('/oauth2callback', async (req, res) => {
   }
 });
 
-// ---- read API (T-10) ----
-app.get('/api/items', h(async (_req, res) => {
+// ---- read API (scoped to the authed user) ----
+app.get('/api/items', authed(async (req, res) => {
   const { rows } = await q(
     `SELECT i.*, t.subject AS src_subject, m.from_name AS src_from_name,
             m.from_email AS src_from_email, m.sent_at AS src_sent_at
      FROM items i
      LEFT JOIN messages m ON m.id = i.source_message_id
      LEFT JOIN threads t ON t.id = m.thread_id
-     ORDER BY i.created_at DESC`
+     WHERE i.user_id = $1
+     ORDER BY i.created_at DESC`,
+    [req.userId]
   );
   res.json(
     rows.map(({ src_subject, src_from_name, src_from_email, src_sent_at, ...item }) => ({
@@ -97,39 +145,40 @@ app.get('/api/items', h(async (_req, res) => {
   );
 }));
 
-app.get('/api/messages/:id', h(async (req, res) => {
+app.get('/api/messages/:id', authed(async (req, res) => {
   const { rows } = await q(
-    `SELECT m.*, t.subject FROM messages m LEFT JOIN threads t ON t.id = m.thread_id WHERE m.id = $1`,
-    [req.params.id]
+    `SELECT m.*, t.subject FROM messages m LEFT JOIN threads t ON t.id = m.thread_id
+     WHERE m.id = $1 AND m.user_id = $2`,
+    [req.params.id, req.userId]
   );
   if (!rows.length) return res.status(404).json({ error: 'not found' });
   res.json({ ...rows[0], gmail_url: gmailUrl(rows[0].id) });
 }));
 
-// ---- calendar + AI layer (T-08/T-09, T-14, T-15, T-16, T-34) ----
-app.get('/api/events', h(async (_req, res) => {
+app.get('/api/events', authed(async (req, res) => {
   const { rows } = await q(
-    `SELECT * FROM events WHERE start_at >= now() - interval '1 hour' ORDER BY start_at LIMIT 20`
+    `SELECT * FROM events WHERE user_id = $1 AND start_at >= now() - interval '1 hour' ORDER BY start_at LIMIT 20`,
+    [req.userId]
   );
   res.json(rows);
 }));
 
-app.get('/api/events/:id/brief', h(async (req, res) => {
-  const brief = await briefForEvent(req.params.id);
+app.get('/api/events/:id/brief', authed(async (req, res) => {
+  const brief = await briefForEvent(req.params.id, req.userId);
   if (!brief) return res.status(404).json({ error: 'event not found' });
   res.json(brief);
 }));
 
-app.post('/api/ask', h(async (req, res) => {
+app.post('/api/ask', authed(async (req, res) => {
   const question = String(req.body?.question ?? '').trim();
   if (!question) return res.status(400).json({ error: 'question missing' });
-  res.json(await askMemory(question));
+  res.json(await askMemory(question, req.userId));
 }));
 
-app.get('/api/digest', h(async (_req, res) => res.json(await generateDigest())));
+app.get('/api/digest', authed(async (req, res) => res.json(await generateDigest(req.userId))));
 
-app.post('/api/items/:id/nudge', h(async (req, res) => {
-  const draft = await draftNudge(req.params.id);
+app.post('/api/items/:id/nudge', authed(async (req, res) => {
+  const draft = await draftNudge(req.params.id, req.userId);
   if (!draft) return res.status(404).json({ error: 'item not found' });
   res.json(draft);
 }));
@@ -143,13 +192,15 @@ setInterval(async () => {
   if (ticking) return;
   ticking = true;
   try {
-    await syncRecent();
-    await syncCalendar();
+    for (const uid of await googleConnectedUserIds()) {
+      await syncRecent(uid).catch((e) => console.error('[sync]', String(e)));
+      await syncCalendar(uid).catch((e) => console.error('[cal]', String(e)));
+    }
+    // extraction/embedding are global but carry each row's user_id from its thread
     if (ANTHROPIC_API_KEY) await extractAll();
     if (OPENAI_API_KEY) await embedMissing();
   } catch (e) {
-    const msg = String(e);
-    if (!msg.includes('not connected')) console.error('[tick]', msg);
+    console.error('[tick]', String(e));
   } finally {
     ticking = false;
   }

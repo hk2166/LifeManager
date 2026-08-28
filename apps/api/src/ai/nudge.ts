@@ -15,14 +15,14 @@ const TOOL: ToolSpec = {
   },
 };
 
-export async function draftNudge(itemId: string) {
+export async function draftNudge(itemId: string, userId: string) {
   const { rows } = await q(
     `SELECT i.*, m.body_text AS src_body, m.sent_at AS src_sent_at, t.subject AS src_subject
      FROM items i
      LEFT JOIN messages m ON m.id = i.source_message_id
      LEFT JOIN threads t ON t.id = m.thread_id
-     WHERE i.id = $1`,
-    [itemId]
+     WHERE i.id = $1 AND i.user_id = $2`,
+    [itemId, userId]
   );
   if (!rows.length) return null;
   const i = rows[0];

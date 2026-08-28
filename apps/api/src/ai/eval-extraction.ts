@@ -1,14 +1,24 @@
 // T-12: precision/recall of the commitment extractor against the labeled seed corpus.
-// Requires a seeded DB (npm run db:seed) and ANTHROPIC_API_KEY.
+// Self-contained: creates a throwaway eval user, seeds it, then scores. Needs ANTHROPIC_API_KEY.
 import { pool, q } from '../db/index';
 import { DEMO_OWNER_EMAIL, DEMO_OWNER_NAME } from '../config';
 import { buildCorpus, resolveDue } from '../../seed/corpus';
+import { runSeed, sid } from '../../seed/seed';
 import { extractThread } from './extract';
 
 const DAY = 86_400_000;
 
 async function main() {
   const { threads } = buildCorpus({ name: DEMO_OWNER_NAME, email: DEMO_OWNER_EMAIL });
+  // dedicated eval user so scoring is deterministic regardless of other data
+  const { rows: u } = await q<{ id: string }>(
+    `INSERT INTO users (email, password_hash, name) VALUES ($1,'x',$2)
+     ON CONFLICT (email) DO UPDATE SET name = EXCLUDED.name RETURNING id`,
+    ['eval@lifeos.demo', 'eval']
+  );
+  const userId = u[0].id;
+  await runSeed(userId);
+
   let tp = 0;
   let fn = 0;
   let fp = 0;
@@ -16,15 +26,16 @@ async function main() {
   const notes: string[] = [];
 
   for (const t of threads) {
+    const threadId = sid(userId, t.id);
     const { rows: msgs } = await q<{ id: string; sent_at: Date }>(
       'SELECT id, sent_at FROM messages WHERE thread_id = $1 ORDER BY sent_at',
-      [t.id]
+      [threadId]
     );
     if (!msgs.length) {
-      console.error(`thread ${t.id} not in DB - run db:seed first`);
+      console.error(`thread ${threadId} not in DB`);
       process.exit(1);
     }
-    const predicted = (await extractThread(t.id)).filter((c) => c.confidence >= 0.5);
+    const predicted = (await extractThread(threadId)).filter((c) => c.confidence >= 0.5);
     const used = new Set<number>();
     for (const exp of t.expect) {
       const expDue = resolveDue(exp.due, new Date(msgs[exp.from_message].sent_at));

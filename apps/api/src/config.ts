@@ -23,4 +23,5 @@ export const DEMO_OWNER_NAME = process.env.DEMO_OWNER_NAME ?? 'Hemant';
 export const DEMO_OWNER_EMAIL = process.env.DEMO_OWNER_EMAIL ?? 'you@lifeos.demo';
 
 export const CLASSIFY_CONFIDENCE_MIN = Number(process.env.CLASSIFY_CONFIDENCE_MIN ?? 0.8);
+export const JWT_SECRET = process.env.JWT_SECRET ?? 'dev-only-insecure-secret-change-in-prod';
 export const UPLOADS_DIR = path.join(REPO_ROOT, 'uploads');

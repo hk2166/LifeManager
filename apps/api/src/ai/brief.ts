@@ -19,8 +19,8 @@ const TOOL: ToolSpec = {
   },
 };
 
-export async function briefForEvent(eventId: string) {
-  const { rows: evs } = await q('SELECT * FROM events WHERE id = $1', [eventId]);
+export async function briefForEvent(eventId: string, userId: string) {
+  const { rows: evs } = await q('SELECT * FROM events WHERE id = $1 AND user_id = $2', [eventId, userId]);
   if (!evs.length) return null;
   const ev = evs[0];
   const attendees: { name: string; email: string }[] = ev.attendees ?? [];
@@ -31,14 +31,14 @@ export async function briefForEvent(eventId: string) {
   const { rows: msgs } = await q(
     `SELECT m.from_name, m.from_email, m.sent_at, m.body_text, t.subject
      FROM messages m JOIN threads t ON t.id = m.thread_id
-     WHERE lower(m.from_email) = ANY($1) OR m.to_emails && $1
+     WHERE m.user_id = $2 AND (lower(m.from_email) = ANY($1) OR m.to_emails && $1)
      ORDER BY m.sent_at DESC LIMIT 12`,
-    [emails]
+    [emails, userId]
   );
   const { rows: open } = await q(
     `SELECT direction, title, due_at FROM items
-     WHERE status = 'open' AND type = 'commitment' AND lower(counterparty_email) = ANY($1)`,
-    [emails]
+     WHERE user_id = $2 AND status = 'open' AND type = 'commitment' AND lower(counterparty_email) = ANY($1)`,
+    [emails, userId]
   );
   const t0 = Date.now();
   const openTxt = open.length

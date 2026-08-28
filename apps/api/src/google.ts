@@ -12,19 +12,25 @@ export function oauthClient() {
 }
 
 // merge (||) so a refresh response without refresh_token never clobbers the stored one
-export async function saveTokens(tokens: object) {
+export async function saveTokens(userId: string, tokens: object) {
   await q(
-    `INSERT INTO google_tokens (id, tokens, updated_at) VALUES (1, $1, now())
-     ON CONFLICT (id) DO UPDATE SET tokens = google_tokens.tokens || EXCLUDED.tokens, updated_at = now()`,
-    [JSON.stringify(tokens)]
+    `INSERT INTO google_tokens (user_id, tokens, updated_at) VALUES ($1, $2, now())
+     ON CONFLICT (user_id) DO UPDATE SET tokens = google_tokens.tokens || EXCLUDED.tokens, updated_at = now()`,
+    [userId, JSON.stringify(tokens)]
   );
 }
 
-export async function getAuthed() {
-  const { rows } = await q('SELECT tokens FROM google_tokens WHERE id = 1');
+export async function getAuthed(userId: string) {
+  const { rows } = await q('SELECT tokens FROM google_tokens WHERE user_id = $1', [userId]);
   if (!rows.length) throw new Error('Google account not connected - open /auth/google first');
   const client = oauthClient();
   client.setCredentials(rows[0].tokens);
-  client.on('tokens', (t) => void saveTokens(t).catch((e) => console.error('token save failed', e)));
+  client.on('tokens', (t) => void saveTokens(userId, t).catch((e) => console.error('token save failed', e)));
   return client;
+}
+
+// users who have connected Google — the tick iterates these
+export async function googleConnectedUserIds(): Promise<string[]> {
+  const { rows } = await q<{ user_id: string }>('SELECT user_id FROM google_tokens');
+  return rows.map((r) => r.user_id);
 }
