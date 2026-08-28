@@ -10,6 +10,7 @@
     "extract": "npm run extract -w api",
     "eval:extraction": "npm run eval:extraction -w api",
     "eval:memos": "npm run eval:memos -w api",
+    "demo:reset": "npm run db:reset && npm run extract",
     "typecheck": "npm run typecheck -w api && npm run typecheck -w web"
   },
   "devDependencies": {
