@@ -1,6 +1,7 @@
 import { q } from '../db/index';
 import { DEMO_OWNER_EMAIL, DEMO_OWNER_NAME } from '../config';
 import { structured, type ToolSpec } from './claude';
+import { isAutomatedSender } from './senders';
 
 export interface ExtractedCommitment {
   title: string;
@@ -131,12 +132,27 @@ export async function extractAll(force = false) {
      LEFT JOIN extraction_state es ON es.thread_id = t.id
      WHERE es.thread_id IS NULL OR es.last_message_id <> last.id`
   );
+  // Pre-filter: a thread can only hold a commitment involving the owner if the
+  // owner participated or a real human wrote. All-automated threads are skipped
+  // (and marked done so they aren't rescanned) - no LLM call spent on no-reply mail.
+  const owner = DEMO_OWNER_EMAIL.toLowerCase();
   let found = 0;
+  let skipped = 0;
   for (const t of threads) {
+    const { rows: senders } = await q<{ from_email: string }>(
+      'SELECT DISTINCT lower(from_email) AS from_email FROM messages WHERE thread_id = $1',
+      [t.id]
+    );
+    const worthReading = senders.some((s) => s.from_email === owner || !isAutomatedSender(s.from_email));
+    if (!worthReading) {
+      await persist(t.id, [], t.last_id);
+      skipped++;
+      continue;
+    }
     const commitments = await extractThread(t.id);
     await persist(t.id, commitments, t.last_id);
     found += commitments.filter((c) => c.confidence >= 0.5).length;
     console.log(`${t.id}: ${commitments.length} commitment(s)`);
   }
-  console.log(`extracted ${found} item(s) from ${threads.length} thread(s)`);
+  console.log(`extracted ${found} item(s) from ${threads.length - skipped} thread(s); skipped ${skipped} automated`);
 }
