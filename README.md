@@ -2,6 +2,8 @@
 
 AI layer over email + calendar: commitment extraction, a "waiting on" tracker, and a one-tap voice memo that transcribes, classifies, and files itself. Full plan and task IDs: [TASKS.md](TASKS.md).
 
+**New here? Start with [SETUP.md](SETUP.md)** — step-by-step local setup for the whole team.
+
 ## Layout
 
 npm workspaces:
