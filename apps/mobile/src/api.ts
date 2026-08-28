@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { File, UploadType } from 'expo-file-system';
 import type { ItemType, ItemWithSource, Memo, MemoResult } from 'shared';
 
 export const API = process.env.EXPO_PUBLIC_API_URL ?? 'http://localhost:3001';
@@ -34,11 +35,15 @@ export function usePoll<T>(path: string, ms = 4000): { data: T | null; error: st
 }
 
 export async function uploadMemo(uri: string): Promise<MemoResult> {
-  const form = new FormData();
-  form.append('audio', { uri, name: 'memo.m4a', type: 'audio/m4a' } as unknown as Blob);
-  const r = await fetch(`${API}/api/memos`, { method: 'POST', body: form });
-  if (!r.ok) throw new Error(`upload failed: ${r.status} ${await r.text()}`);
-  return r.json();
+  // SDK 57's WinterCG fetch rejects RN's {uri} FormData part; File.upload does native multipart
+  const res = await new File(uri).upload(`${API}/api/memos`, {
+    httpMethod: 'POST',
+    uploadType: UploadType.MULTIPART,
+    fieldName: 'audio',
+    mimeType: 'audio/m4a',
+  });
+  if (res.status < 200 || res.status >= 300) throw new Error(`upload failed: ${res.status} ${res.body}`);
+  return JSON.parse(res.body) as MemoResult;
 }
 
 export async function confirmMemo(id: string, type: ItemType): Promise<MemoResult> {

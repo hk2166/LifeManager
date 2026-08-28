@@ -12,13 +12,16 @@ const upload = multer({ dest: UPLOADS_DIR, limits: { fileSize: 25 * 1024 * 1024 
 
 type Entities = Pick<Classification, 'title' | 'due_iso' | 'person' | 'direction'>;
 
-async function createItem(memoId: string, type: string, e: Entities, confidence: number | null) {
+async function createItem(memoId: string, type: string, e: Entities, confidence: number | null, fallback = '') {
   const due = e.due_iso && !Number.isNaN(Date.parse(e.due_iso)) ? new Date(e.due_iso) : null;
   const direction = type === 'commitment' ? (e.direction ?? 'owed_by_me') : null;
+  // on unintelligible audio the model can emit a placeholder title; fall back to the transcript
+  const clean = (e.title ?? '').trim();
+  const title = clean && !/^<.*>$|^unknown$/i.test(clean) ? clean : fallback.trim() || 'Voice memo';
   const { rows } = await q(
     `INSERT INTO items (type, direction, title, counterparty_name, due_at, confidence, source_kind, source_memo_id)
      VALUES ($1,$2,$3,$4,$5,$6,'memo',$7) RETURNING *`,
-    [type, direction, e.title, e.person, due, confidence, memoId]
+    [type, direction, title, e.person, due, confidence, memoId]
   );
   await q('UPDATE memos SET item_id = $1 WHERE id = $2', [rows[0].id, memoId]);
   return rows[0];
@@ -41,7 +44,7 @@ export function registerMemoRoutes(app: express.Express) {
       const entities: Entities = { title: c.title, due_iso: c.due_iso, person: c.person, direction: c.direction };
       // below the confidence floor we ask, never guess silently
       const eligible = c.confidence >= CLASSIFY_CONFIDENCE_MIN;
-      const item = eligible ? await createItem(id, c.type, entities, c.confidence) : null;
+      const item = eligible ? await createItem(id, c.type, entities, c.confidence, text) : null;
       const { rows } = await q(
         `UPDATE memos SET transcript=$1, transcribe_ms=$2, classify_ms=$3, status=$4,
                           suggested_type=$5, confidence=$6, entities=$7
@@ -72,7 +75,7 @@ export function registerMemoRoutes(app: express.Express) {
     const memo = rows[0];
     if (memo.item_id) return res.status(409).json({ error: 'memo already filed' });
     const entities: Entities = memo.entities ?? { title: memo.transcript?.slice(0, 60) ?? 'Memo', due_iso: null, person: null, direction: null };
-    const item = await createItem(memo.id, type, entities, memo.confidence);
+    const item = await createItem(memo.id, type, entities, memo.confidence, memo.transcript ?? '');
     const { rows: upd } = await q(`UPDATE memos SET status='routed' WHERE id=$1 RETURNING *`, [memo.id]);
     res.json({ memo: upd[0], item, needs_confirmation: false });
   }));
