@@ -1,0 +1,34 @@
+# Render.com blueprint — free tier. One web service (API serves the built dashboard)
+# plus one free Postgres with pgvector. Deploy: render.com → New → Blueprint → pick this repo.
+# You must set ANTHROPIC_API_KEY and OPENAI_API_KEY in the dashboard (they're marked sync:false),
+# and set hard spend caps on both keys first — the API has no auth, so the URL is public.
+
+databases:
+  - name: lifeos-db
+    databaseName: lifeos
+    plan: free
+    postgresMajorVersion: "16"
+
+services:
+  - type: web
+    name: lifeos
+    runtime: node
+    plan: free
+    buildCommand: npm install --include=dev && npm run build -w web
+    startCommand: npm run start -w api
+    healthCheckPath: /health
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: lifeos-db
+          property: connectionString
+      - key: ANTHROPIC_API_KEY
+        sync: false
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: DEMO_OWNER_NAME
+        value: You
+      - key: DEMO_OWNER_EMAIL
+        value: you@lifeos.demo
+      - key: CLASSIFY_CONFIDENCE_MIN
+        value: "0.8"

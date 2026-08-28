@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
 
-export const API = (import.meta.env.VITE_API_URL as string | undefined) ?? 'http://localhost:3001';
+// production build (served by the API itself) talks to the same origin; dev talks to :3001
+export const API =
+  (import.meta.env.VITE_API_URL as string | undefined) ?? (import.meta.env.PROD ? '' : 'http://localhost:3001');
 
 async function parse<T>(r: Response, path: string): Promise<T> {
   if (!r.ok) {

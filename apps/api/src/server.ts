@@ -1,6 +1,8 @@
+import fs from 'node:fs';
+import path from 'node:path';
 import express from 'express';
 import cors from 'cors';
-import { ANTHROPIC_API_KEY, GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, OPENAI_API_KEY, PORT } from './config';
+import { ANTHROPIC_API_KEY, GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, OPENAI_API_KEY, PORT, REPO_ROOT } from './config';
 import { q } from './db/index';
 import { oauthClient, saveTokens, SCOPES } from './google';
 import { h } from './http';
@@ -153,4 +155,15 @@ setInterval(async () => {
   }
 }, 2 * 60_000);
 
-app.listen(PORT, () => console.log(`api on http://localhost:${PORT}`));
+// In production the API also serves the built dashboard (single-service deploy).
+// No-op locally where apps/web/dist doesn't exist and Vite serves the web itself.
+const webDist = path.join(REPO_ROOT, 'apps/web/dist');
+if (fs.existsSync(webDist)) {
+  app.use(express.static(webDist));
+  app.get('*', (req, res, next) => {
+    if (req.path.startsWith('/api') || req.path === '/health') return next();
+    res.sendFile(path.join(webDist, 'index.html'));
+  });
+}
+
+app.listen(PORT, () => console.log(`api listening on ${PORT}`));

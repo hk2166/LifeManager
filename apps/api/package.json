@@ -4,6 +4,7 @@
   "type": "module",
   "scripts": {
     "dev": "tsx watch src/server.ts",
+    "start": "tsx src/db/migrate.ts && tsx seed/seed.ts && tsx src/server.ts",
     "migrate": "tsx src/db/migrate.ts",
     "seed": "tsx seed/seed.ts",
     "reset": "tsx src/db/reset.ts",
