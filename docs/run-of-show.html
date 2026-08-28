@@ -1,0 +1,468 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Life OS Run of Show</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap">
+
+<style>
+  :root {
+    --ground: #f5f7fb;
+    --panel: #ffffff;
+    --panel-2: #eef1f7;
+    --ink: #191c24;
+    --muted: #59617240;
+    --muted-ink: #59616f;
+    --line: #e2e6ef;
+    --accent: #365fd0;
+    --accent-soft: #e7edfb;
+    --spot: #b3701f;
+    --spot-soft: #f8efdf;
+    --spot-line: #e4c496;
+    --danger: #bd4b43;
+    --danger-soft: #f9e7e5;
+    --shadow: 0 1px 2px rgba(20,28,48,.04), 0 8px 24px -12px rgba(20,28,48,.14);
+    --script: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+    --body: 'IBM Plex Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    --display: 'Archivo', var(--body);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --ground: #0f1115;
+      --panel: #171a21;
+      --panel-2: #1c2029;
+      --ink: #e8eaf0;
+      --muted-ink: #8b93a5;
+      --line: #262b36;
+      --accent: #6b98f2;
+      --accent-soft: #1b2537;
+      --spot: #e0a458;
+      --spot-soft: #241d13;
+      --spot-line: #4a3c25;
+      --danger: #e0685e;
+      --danger-soft: #2a1a19;
+      --shadow: 0 1px 2px rgba(0,0,0,.3), 0 10px 30px -16px rgba(0,0,0,.6);
+    }
+  }
+  :root[data-theme="dark"] {
+    --ground: #0f1115;
+    --panel: #171a21;
+    --panel-2: #1c2029;
+    --ink: #e8eaf0;
+    --muted-ink: #8b93a5;
+    --line: #262b36;
+    --accent: #6b98f2;
+    --accent-soft: #1b2537;
+    --spot: #e0a458;
+    --spot-soft: #241d13;
+    --spot-line: #4a3c25;
+    --danger: #e0685e;
+    --danger-soft: #2a1a19;
+    --shadow: 0 1px 2px rgba(0,0,0,.3), 0 10px 30px -16px rgba(0,0,0,.6);
+  }
+
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    margin: 0;
+    background: var(--ground);
+    color: var(--ink);
+    font-family: var(--body);
+    font-size: 16px;
+    line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: 860px; margin: 0 auto; padding: clamp(28px, 5vw, 64px) clamp(18px, 4vw, 40px) 72px; }
+
+  /* ---- header ---- */
+  .kicker {
+    font-family: var(--script);
+    font-size: .72rem; font-weight: 500; letter-spacing: .18em; text-transform: uppercase;
+    color: var(--accent);
+    display: flex; align-items: center; gap: 10px;
+  }
+  .kicker::after { content: ""; flex: 1; height: 1px; background: var(--line); }
+  h1 {
+    font-family: var(--display); font-weight: 800;
+    font-size: clamp(2.4rem, 7vw, 3.6rem); line-height: .98; letter-spacing: -.02em;
+    margin: 14px 0 0; text-wrap: balance;
+  }
+  .lede { font-size: 1.08rem; color: var(--muted-ink); margin: 14px 0 0; max-width: 54ch; }
+  .meta { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 20px; }
+  .tag {
+    font-family: var(--script); font-size: .74rem; font-weight: 500;
+    color: var(--muted-ink); background: var(--panel-2);
+    border: 1px solid var(--line); border-radius: 999px; padding: 4px 11px;
+    display: inline-flex; align-items: center; gap: 6px;
+  }
+  .tag b { color: var(--ink); font-weight: 600; }
+
+  /* ---- timeline budget bar ---- */
+  .budget { margin-top: 30px; }
+  .budget-track {
+    display: flex; gap: 3px; height: 42px; border-radius: 8px; overflow: hidden;
+    border: 1px solid var(--line);
+  }
+  .seg {
+    background: var(--panel-2); position: relative;
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--script); font-size: .7rem; font-weight: 600; color: var(--muted-ink);
+    min-width: 0; overflow: hidden; white-space: nowrap;
+  }
+  .seg.hot { background: var(--spot-soft); color: var(--spot); }
+  .budget-legend {
+    display: flex; justify-content: space-between; margin-top: 7px;
+    font-family: var(--script); font-size: .68rem; color: var(--muted-ink);
+  }
+
+  /* ---- section label ---- */
+  .sec-label {
+    font-family: var(--script); font-size: .74rem; font-weight: 600;
+    letter-spacing: .14em; text-transform: uppercase; color: var(--muted-ink);
+    margin: 44px 0 14px; display: flex; align-items: center; gap: 10px;
+  }
+  .sec-label::before { content: ""; width: 18px; height: 2px; background: var(--accent); border-radius: 2px; }
+
+  /* ---- preflight ---- */
+  .card {
+    background: var(--panel); border: 1px solid var(--line); border-radius: 14px;
+    box-shadow: var(--shadow);
+  }
+  .preflight { padding: 8px 6px; }
+  .check {
+    display: flex; gap: 13px; align-items: flex-start;
+    padding: 11px 16px; border-radius: 9px; cursor: pointer;
+    transition: background .15s ease;
+  }
+  .check:hover { background: var(--panel-2); }
+  .check input {
+    appearance: none; -webkit-appearance: none; margin: 2px 0 0; flex: none;
+    width: 20px; height: 20px; border: 1.5px solid var(--line); border-radius: 6px;
+    background: var(--ground); cursor: pointer; position: relative;
+    transition: border-color .15s, background .15s;
+  }
+  .check input:checked { background: var(--accent); border-color: var(--accent); }
+  .check input:checked::after {
+    content: ""; position: absolute; left: 6px; top: 2px; width: 5px; height: 10px;
+    border: solid #fff; border-width: 0 2px 2px 0; transform: rotate(42deg);
+  }
+  .check input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .check-txt { font-size: .96rem; }
+  .check-txt .cmd { display: block; margin-top: 3px; }
+  .check input:checked ~ .check-txt { color: var(--muted-ink); text-decoration: line-through; text-decoration-color: var(--muted); }
+  .reset {
+    display: block; margin: 4px 16px 8px auto; background: none; border: none;
+    font-family: var(--script); font-size: .72rem; color: var(--muted-ink); cursor: pointer;
+    text-decoration: underline; text-underline-offset: 2px;
+  }
+  .reset:hover { color: var(--accent); }
+
+  code, .cmd {
+    font-family: var(--script); font-size: .84em; font-weight: 500;
+    background: var(--panel-2); color: var(--ink);
+    border: 1px solid var(--line); border-radius: 5px; padding: 1px 6px;
+  }
+
+  /* ---- beats ---- */
+  .beats { display: flex; flex-direction: column; gap: 14px; }
+  .beat {
+    display: grid; grid-template-columns: 92px 1fr; gap: 0;
+    background: var(--panel); border: 1px solid var(--line); border-radius: 14px;
+    overflow: hidden; box-shadow: var(--shadow);
+  }
+  .rail {
+    background: var(--panel-2); border-right: 1px solid var(--line);
+    padding: 18px 12px; display: flex; flex-direction: column; align-items: center; gap: 6px;
+    text-align: center;
+  }
+  .rail .num {
+    font-family: var(--display); font-weight: 800; font-size: 1.9rem; line-height: 1;
+    color: var(--accent);
+  }
+  .rail .tc { font-family: var(--script); font-size: .72rem; color: var(--ink); font-weight: 600; margin-top: 2px; }
+  .rail .dur { font-family: var(--script); font-size: .66rem; color: var(--muted-ink); }
+  .body { padding: 18px 20px 20px; min-width: 0; }
+  .beat-title {
+    font-family: var(--display); font-weight: 700; font-size: 1.16rem; letter-spacing: -.01em;
+    margin: 0 0 2px; text-wrap: balance;
+  }
+  .beat-note { font-size: .84rem; color: var(--muted-ink); margin: 0 0 14px; }
+
+  .lane { display: grid; grid-template-columns: 62px 1fr; gap: 12px; padding: 10px 0; }
+  .lane + .lane { border-top: 1px dashed var(--line); }
+  .lane-label {
+    font-family: var(--script); font-size: .66rem; font-weight: 600; letter-spacing: .1em;
+    text-transform: uppercase; color: var(--muted-ink); padding-top: 3px;
+  }
+  .lane-screen .lane-label { color: var(--accent); }
+  .lane-say .lane-label { color: var(--spot); }
+  .lane-body { min-width: 0; }
+  .lane-body p { margin: 0; }
+  .steps { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 7px; }
+  .steps li { display: flex; gap: 9px; align-items: baseline; }
+  .steps li::before {
+    content: counter(step); counter-increment: step;
+    font-family: var(--script); font-size: .68rem; font-weight: 600;
+    color: var(--muted-ink); background: var(--panel-2); border: 1px solid var(--line);
+    border-radius: 5px; min-width: 18px; height: 18px; display: inline-flex;
+    align-items: center; justify-content: center; flex: none; transform: translateY(2px);
+  }
+  .steps { counter-reset: step; }
+  .btn {
+    font-family: var(--body); font-weight: 600; font-size: .82em;
+    background: var(--accent-soft); color: var(--accent);
+    border-radius: 5px; padding: 1px 7px; white-space: nowrap;
+    border: 1px solid transparent;
+  }
+  .say {
+    font-family: var(--script); font-size: .98rem; line-height: 1.5; color: var(--ink);
+    border-left: 2px solid var(--spot); padding-left: 13px;
+  }
+  .say .q { color: var(--spot); }
+
+  /* the moment */
+  .beat.moment { border-color: var(--spot-line); }
+  .beat.moment .rail { background: var(--spot-soft); border-right-color: var(--spot-line); }
+  .beat.moment .rail .num { color: var(--spot); }
+  .badge {
+    display: inline-block; font-family: var(--script); font-size: .62rem; font-weight: 600;
+    letter-spacing: .12em; text-transform: uppercase; color: var(--spot);
+    background: var(--spot-soft); border: 1px solid var(--spot-line);
+    border-radius: 999px; padding: 2px 9px; margin-bottom: 9px;
+  }
+  .speak {
+    background: var(--spot-soft); border: 1px solid var(--spot-line); border-radius: 8px;
+    padding: 9px 13px; margin-top: 4px;
+    font-family: var(--script); font-size: .92rem; color: var(--ink);
+  }
+  .speak .say-exact {
+    display: block; font-size: .64rem; font-weight: 600; letter-spacing: .1em;
+    text-transform: uppercase; color: var(--spot); margin-bottom: 3px;
+  }
+
+  /* ---- callouts ---- */
+  .callouts { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 16px; }
+  .callout { padding: 18px 20px; border-radius: 14px; border: 1px solid var(--line); background: var(--panel); }
+  .callout.warn { border-color: var(--spot-line); background: var(--spot-soft); }
+  .callout.stop { border-color: var(--danger); background: var(--danger-soft); }
+  .callout h3 {
+    font-family: var(--script); font-size: .74rem; font-weight: 600; letter-spacing: .1em;
+    text-transform: uppercase; margin: 0 0 9px;
+  }
+  .callout.warn h3 { color: var(--spot); }
+  .callout.stop h3 { color: var(--danger); }
+  .callout p { margin: 0; font-size: .92rem; }
+  .callout p + p { margin-top: 8px; }
+  .callout b { font-weight: 700; }
+
+  footer {
+    margin-top: 40px; padding-top: 18px; border-top: 1px solid var(--line);
+    font-family: var(--script); font-size: .72rem; color: var(--muted-ink);
+    display: flex; justify-content: space-between; flex-wrap: wrap; gap: 8px;
+  }
+
+  @media (max-width: 560px) {
+    .beat { grid-template-columns: 1fr; }
+    .rail { flex-direction: row; justify-content: flex-start; gap: 12px; border-right: none; border-bottom: 1px solid var(--line); padding: 12px 18px; }
+    .lane { grid-template-columns: 1fr; gap: 5px; }
+    .callouts { grid-template-columns: 1fr; }
+    .seg { font-size: 0; }
+    .seg.hot { font-size: .7rem; }
+  }
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="kicker">Life OS · 3-minute live demo</div>
+    <h1>Run of Show</h1>
+    <p class="lede">The exact demo, beat by beat — what's on screen, what you do, and the line you say. Keep it open on a second screen while you present.</p>
+    <div class="meta">
+      <span class="tag"><b>3:00</b> total</span>
+      <span class="tag"><b>6</b> beats</span>
+      <span class="tag">Projector = <b>dashboard</b></span>
+      <span class="tag">Phone enters at <b>beat 4</b></span>
+    </div>
+
+    <div class="budget" aria-label="Time budget across the six beats">
+      <div class="budget-track">
+        <div class="seg" style="flex:20">0</div>
+        <div class="seg" style="flex:40">1 · the hook</div>
+        <div class="seg" style="flex:25">2</div>
+        <div class="seg" style="flex:25">3</div>
+        <div class="seg hot" style="flex:50">4 · the moment</div>
+        <div class="seg" style="flex:20">5</div>
+      </div>
+      <div class="budget-legend"><span>0:00</span><span>1:00</span><span>2:00</span><span>3:00</span></div>
+    </div>
+  </header>
+
+  <div class="sec-label">Pre-flight · before you're on stage</div>
+  <div class="card preflight">
+    <label class="check"><input type="checkbox" data-k="0"><span class="check-txt">Postgres up — <code>docker compose up -d</code></span></label>
+    <label class="check"><input type="checkbox" data-k="1"><span class="check-txt">API + dashboard running — <code>npm run dev</code> <span class="cmd">api :3001 · web :5173</span></span></label>
+    <label class="check"><input type="checkbox" data-k="2"><span class="check-txt">Demo data loaded — <b>11 commitments, 6 upcoming</b>. If it looks empty: <code>npm run demo:reset</code></span></label>
+    <label class="check"><input type="checkbox" data-k="3"><span class="check-txt">Phone ready — Life OS on the booted simulator (mirror it), or a real iPhone via Expo Go on the same network</span></label>
+    <label class="check"><input type="checkbox" data-k="4"><span class="check-txt">Projector on the dashboard, <b>Today</b> tab open</span></label>
+    <label class="check"><input type="checkbox" data-k="5"><span class="check-txt">Fallback screen-recording cued in an adjacent browser tab</span></label>
+    <label class="check"><input type="checkbox" data-k="6"><span class="check-txt">Roadmap slide open — <code>docs/roadmap-slide.html</code></span></label>
+    <label class="check"><input type="checkbox" data-k="7"><span class="check-txt">Mic test in the actual room — a loud hall beats up the simulator mic; a real phone is safer</span></label>
+    <button class="reset" type="button" id="reset">reset checklist</button>
+  </div>
+
+  <div class="sec-label">The run · six beats</div>
+  <div class="beats">
+
+    <!-- BEAT 0 -->
+    <article class="beat">
+      <div class="rail"><span class="num">0</span><span class="tc">0:00–0:20</span><span class="dur">20s</span></div>
+      <div class="body">
+        <h2 class="beat-title">Cold open — name the problem</h2>
+        <p class="beat-note">Don't touch anything yet. Let the dashboard sit behind you.</p>
+        <div class="lane lane-screen"><span class="lane-label">Screen</span><div class="lane-body"><p>Dashboard, <b>Today</b> tab — already open.</p></div></div>
+        <div class="lane lane-say"><span class="lane-label">Say</span><div class="lane-body"><p class="say"><span class="q">"</span>Our lives are split across Slack, WhatsApp, email, and calendar — and things fall through the cracks. The hard part was never <em>reading</em> all of it. It's <em>remembering</em> it. Life OS does the remembering.<span class="q">"</span></p></div></div>
+      </div>
+    </article>
+
+    <!-- BEAT 1 -->
+    <article class="beat">
+      <div class="rail"><span class="num">1</span><span class="tc">0:20–1:00</span><span class="dur">40s</span></div>
+      <div class="body">
+        <h2 class="beat-title">Commitments &amp; Waiting On — the hook</h2>
+        <p class="beat-note">This is the feature judges recognize instantly. Don't rush it.</p>
+        <div class="lane lane-screen"><span class="lane-label">Screen</span><div class="lane-body"><p>Commitments tab → source drawer → Waiting On tab.</p></div></div>
+        <div class="lane lane-do"><span class="lane-label">Do</span><div class="lane-body">
+          <ol class="steps">
+            <li>Click <span class="btn">Commitments</span></li>
+            <li>Click the row <span class="btn">Send revised offsite deck to Priya</span> — the drawer opens the exact source email.</li>
+            <li>Click <span class="btn">Waiting On</span></li>
+          </ol>
+        </div></div>
+        <div class="lane lane-say"><span class="lane-label">Say</span><div class="lane-body"><p class="say"><span class="q">"</span>It read this inbox and pulled out every promise. You told Priya you'd send the deck by Thursday — here's the exact sentence where you said it. And here's the inverse: everything you're <em>waiting on</em> from other people. Nobody builds this, and everybody needs it.<span class="q">"</span></p></div></div>
+      </div>
+    </article>
+
+    <!-- BEAT 2 -->
+    <article class="beat">
+      <div class="rail"><span class="num">2</span><span class="tc">1:00–1:25</span><span class="dur">25s</span></div>
+      <div class="body">
+        <h2 class="beat-title">Long-term memory — Ask</h2>
+        <p class="beat-note">Start talking the moment you hit Enter; the answer lands as you finish the line.</p>
+        <div class="lane lane-screen"><span class="lane-label">Screen</span><div class="lane-body"><p>Ask tab.</p></div></div>
+        <div class="lane lane-do"><span class="lane-label">Do</span><div class="lane-body">
+          <ol class="steps">
+            <li>Click <span class="btn">Ask</span></li>
+            <li>Type <code>What did we decide about the caterer for the offsite?</code> → Enter</li>
+          </ol>
+        </div></div>
+        <div class="lane lane-say"><span class="lane-label">Say</span><div class="lane-body"><p class="say"><span class="q">"</span>That thread died in June. The memory didn't — here's the decision, with the original email linked.<span class="q">"</span></p></div></div>
+      </div>
+    </article>
+
+    <!-- BEAT 3 -->
+    <article class="beat">
+      <div class="rail"><span class="num">3</span><span class="tc">1:25–1:50</span><span class="dur">25s</span></div>
+      <div class="body">
+        <h2 class="beat-title">Pre-meeting brief</h2>
+        <p class="beat-note">Takes ~4s to generate — fill it with the spoken line.</p>
+        <div class="lane lane-screen"><span class="lane-label">Screen</span><div class="lane-body"><p>Today tab → the next-meeting card.</p></div></div>
+        <div class="lane lane-do"><span class="lane-label">Do</span><div class="lane-body">
+          <ol class="steps">
+            <li>Click <span class="btn">Today</span></li>
+            <li>On the <b>Offsite planning sync</b> card, click <span class="btn">Prep brief</span></li>
+          </ol>
+        </div></div>
+        <div class="lane lane-say"><span class="lane-label">Say</span><div class="lane-body"><p class="say"><span class="q">"</span>Ten minutes before your call with Priya, it hands you everything you owe her, everything she owes you, and the latest context — no tab archaeology.<span class="q">"</span></p></div></div>
+      </div>
+    </article>
+
+    <!-- BEAT 4 -->
+    <article class="beat moment">
+      <div class="rail"><span class="num">4</span><span class="tc">1:50–2:40</span><span class="dur">50s</span></div>
+      <div class="body">
+        <span class="badge">The moment</span>
+        <h2 class="beat-title">The voice memo files itself</h2>
+        <p class="beat-note">Switch to the phone. Speak the two lines <b>exactly</b> — they're the validated ones; don't improvise on stage.</p>
+        <div class="lane lane-screen"><span class="lane-label">Screen</span><div class="lane-body"><p>The phone (mirrored or on camera), then back to the dashboard.</p></div></div>
+        <div class="lane lane-do"><span class="lane-label">Do</span><div class="lane-body">
+          <ol class="steps">
+            <li>Tap the center <span class="btn">🎤 mic</span> — it starts recording on the first tap.</li>
+            <li>Speak, then tap <span class="btn">Stop</span>:
+              <div class="speak"><span class="say-exact">Say exactly</span>"Dinner with Nina next Friday at 8 PM at the ramen place."</div>
+            </li>
+            <li>It transcribes, classifies, and files it — <span class="btn">Added to events</span>.</li>
+            <li>Tap <span class="btn">🎤 mic</span> again:
+              <div class="speak"><span class="say-exact">Say exactly</span>"Call the dentist."</div>
+            </li>
+            <li>It's not sure → a <b>confirmation chip</b> row appears. Tap <span class="btn">task</span>.</li>
+            <li>Switch back to the dashboard — both items are already there.</li>
+          </ol>
+        </div></div>
+        <div class="lane lane-say"><span class="lane-label">Say</span><div class="lane-body"><p class="say"><span class="q">"</span>Capture is one tap. It transcribed, classified, and filed it — and when it's genuinely unsure, it <em>asks</em> instead of guessing silently. The raw audio stays attached to whatever it creates.<span class="q">"</span></p></div></div>
+      </div>
+    </article>
+
+    <!-- BEAT 5 -->
+    <article class="beat">
+      <div class="rail"><span class="num">5</span><span class="tc">2:40–3:00</span><span class="dur">20s</span></div>
+      <div class="body">
+        <h2 class="beat-title">The close — roadmap</h2>
+        <p class="beat-note">Land the "moat" line and stop. Don't trail off.</p>
+        <div class="lane lane-screen"><span class="lane-label">Screen</span><div class="lane-body"><p>Roadmap slide.</p></div></div>
+        <div class="lane lane-do"><span class="lane-label">Do</span><div class="lane-body">
+          <ol class="steps"><li>Switch to the roadmap tab.</li></ol>
+        </div></div>
+        <div class="lane lane-say"><span class="lane-label">Say</span><div class="lane-body"><p class="say"><span class="q">"</span>Email and calendar this weekend. WhatsApp and Slack are the same pipeline — every inbox is just an adapter. The memory layer is the moat. That's Life OS.<span class="q">"</span></p></div></div>
+      </div>
+    </article>
+
+  </div>
+
+  <div class="callouts">
+    <div class="callout warn">
+      <h3>If you run long</h3>
+      <p>Cut in this order: <b>beat 3</b> (brief), then <b>beat 2</b> (ask).</p>
+      <p><b>Never cut beats 1 and 4</b> — the waiting-on tracker and the self-filing voice memo <em>are</em> the demo.</p>
+    </div>
+    <div class="callout stop">
+      <h3>If the network drops</h3>
+      <p>Switch to the fallback-recording tab and narrate over it. Keep the pace — <b>don't apologize</b>.</p>
+      <p>Ask (beat 2) slow? Keep talking through the "died in June" line; it catches up.</p>
+    </div>
+  </div>
+
+  <footer>
+    <span>Life OS · hackathon demo cue sheet</span>
+    <span>keep this on a second screen</span>
+  </footer>
+</div>
+
+<script>
+  (function () {
+    var boxes = document.querySelectorAll('.check input');
+    var KEY = 'lifeos-runofshow-checks';
+    var saved = {};
+    try { saved = JSON.parse(localStorage.getItem(KEY) || '{}') || {}; } catch (e) { saved = {}; }
+    boxes.forEach(function (b) {
+      if (saved[b.dataset.k]) b.checked = true;
+      b.addEventListener('change', function () {
+        saved[b.dataset.k] = b.checked;
+        try { localStorage.setItem(KEY, JSON.stringify(saved)); } catch (e) {}
+      });
+    });
+    var reset = document.getElementById('reset');
+    if (reset) reset.addEventListener('click', function () {
+      boxes.forEach(function (b) { b.checked = false; });
+      saved = {};
+      try { localStorage.removeItem(KEY); } catch (e) {}
+    });
+  })();
+</script>
+
+</body>
+</html>
