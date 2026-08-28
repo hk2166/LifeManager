@@ -88,6 +88,22 @@ async function ingestMessage(gmail: gmail_v1.Gmail, id: string): Promise<boolean
   return true;
 }
 
+// cheap 2-min poll: idempotent fast-path makes re-listing recent mail nearly free
+export async function syncRecent() {
+  const gmail = google.gmail({ version: 'v1', auth: await getAuthed() });
+  const list = await gmail.users.messages.list({
+    userId: 'me',
+    q: 'newer_than:2d -in:spam -in:trash',
+    maxResults: 50,
+  });
+  let ingested = 0;
+  for (const m of list.data.messages ?? []) {
+    if (await ingestMessage(gmail, m.id!)) ingested++;
+  }
+  if (ingested) console.log(`sync: ${ingested} new message(s)`);
+  return ingested;
+}
+
 export async function backfill(days = 90) {
   const gmail = google.gmail({ version: 'v1', auth: await getAuthed() });
   let pageToken: string | undefined;

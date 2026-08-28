@@ -95,6 +95,12 @@ export async function extractThread(threadId: string): Promise<ExtractedCommitme
 }
 
 async function persist(threadId: string, commitments: ExtractedCommitment[], lastMessageId: string) {
+  // re-extraction of a changed thread replaces its commitments instead of duplicating them
+  await q(
+    `DELETE FROM items WHERE source_kind = 'email' AND type = 'commitment'
+       AND source_message_id IN (SELECT id FROM messages WHERE thread_id = $1)`,
+    [threadId]
+  );
   for (const c of commitments) {
     if (c.confidence < 0.5) continue;
     const due = c.due_iso && !Number.isNaN(Date.parse(c.due_iso)) ? new Date(c.due_iso) : null;
@@ -117,11 +123,13 @@ export async function extractAll(force = false) {
     await q(`DELETE FROM items WHERE source_kind = 'email'`);
     await q('DELETE FROM extraction_state');
   }
+  // new threads, plus threads whose latest message changed since last extraction
   const { rows: threads } = await q<{ id: string; last_id: string }>(
-    `SELECT t.id, (SELECT m.id FROM messages m WHERE m.thread_id = t.id ORDER BY m.sent_at DESC LIMIT 1) AS last_id
+    `SELECT t.id, last.id AS last_id
      FROM threads t
-     WHERE NOT EXISTS (SELECT 1 FROM extraction_state es WHERE es.thread_id = t.id)
-       AND EXISTS (SELECT 1 FROM messages m WHERE m.thread_id = t.id)`
+     JOIN LATERAL (SELECT m.id FROM messages m WHERE m.thread_id = t.id ORDER BY m.sent_at DESC LIMIT 1) last ON true
+     LEFT JOIN extraction_state es ON es.thread_id = t.id
+     WHERE es.thread_id IS NULL OR es.last_message_id <> last.id`
   );
   let found = 0;
   for (const t of threads) {
