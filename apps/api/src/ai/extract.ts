@@ -88,7 +88,9 @@ export async function extractThread(threadId: string): Promise<ExtractedCommitme
     tool: TOOL,
   });
   const ids = new Set(messages.map((m) => m.id));
-  return out.commitments.map((c) => ({
+  // the model may omit the array entirely on a no-commitment thread
+  const commitments = Array.isArray(out.commitments) ? out.commitments : [];
+  return commitments.map((c) => ({
     ...c,
     // if the model hallucinated a message id, anchor to the thread's last message
     source_message_id: ids.has(c.source_message_id) ? c.source_message_id : messages[messages.length - 1].id,

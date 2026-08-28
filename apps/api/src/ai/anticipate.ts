@@ -46,7 +46,7 @@ export async function anticipate() {
   await q(`DELETE FROM items WHERE source_kind = 'email' AND type = 'reminder'`);
   const ids = new Set(msgs.map((m) => m.id));
   let n = 0;
-  for (const it of out.items) {
+  for (const it of Array.isArray(out.items) ? out.items : []) {
     if (it.confidence < 0.6 || !ids.has(it.source_message_id)) continue;
     const due = Number.isNaN(Date.parse(it.date_iso)) ? null : new Date(it.date_iso);
     if (!due || due.getTime() < Date.now()) continue;
