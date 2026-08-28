@@ -17,6 +17,7 @@ import { askMemory } from './ai/ask';
 import { briefForEvent } from './ai/brief';
 import { generateDigest } from './ai/digest';
 import { draftNudge } from './ai/nudge';
+import { synthesizeSpeech } from './ai/tts';
 
 export const gmailUrl = (messageId: string) => `https://mail.google.com/mail/u/0/#all/${messageId}`;
 
@@ -181,6 +182,14 @@ app.post('/api/items/:id/nudge', authed(async (req, res) => {
   const draft = await draftNudge(req.params.id, req.userId);
   if (!draft) return res.status(404).json({ error: 'item not found' });
   res.json(draft);
+}));
+
+// Text-to-speech so the app can talk back (voice-command answers, confirmations).
+app.post('/api/tts', authed(async (req, res) => {
+  const text = String(req.body?.text ?? '').trim();
+  if (!text) return res.status(400).json({ error: 'text missing' });
+  const audio = await synthesizeSpeech(text);
+  res.type('audio/mpeg').send(audio);
 }));
 
 registerMemoRoutes(app);

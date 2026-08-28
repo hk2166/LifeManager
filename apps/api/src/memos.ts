@@ -6,6 +6,8 @@ import { q } from './db/index';
 import { authed } from './auth';
 import { transcribe } from './ai/transcribe';
 import { classify, type Classification } from './ai/classify';
+import { detectIntent } from './ai/intent';
+import { askMemory } from './ai/ask';
 
 fs.mkdirSync(UPLOADS_DIR, { recursive: true });
 const upload = multer({ dest: UPLOADS_DIR, limits: { fileSize: 25 * 1024 * 1024 } });
@@ -38,6 +40,18 @@ export function registerMemoRoutes(app: express.Express) {
     const id: string = ins[0].id;
     try {
       const { text, ms: transcribeMs } = await transcribe(req.file.path, req.file.originalname || 'memo.m4a');
+
+      // "Talk to your Life OS": a spoken question is answered from memory (RAG),
+      // not filed. Only capture intents fall through to classify -> route.
+      if ((await detectIntent(text)) === 'ask') {
+        const answer = await askMemory(text, req.userId);
+        const { rows } = await q(
+          `UPDATE memos SET transcript=$1, transcribe_ms=$2, status='answered' WHERE id=$3 RETURNING *`,
+          [text, transcribeMs, id]
+        );
+        return res.json({ mode: 'answer', memo: rows[0], item: null, needs_confirmation: false, answer });
+      }
+
       const t0 = Date.now();
       const c = await classify(text);
       const classifyMs = Date.now() - t0;
@@ -60,7 +74,7 @@ export function registerMemoRoutes(app: express.Express) {
           id,
         ]
       );
-      res.json({ memo: rows[0], item, needs_confirmation: !eligible });
+      res.json({ mode: 'capture', memo: rows[0], item, needs_confirmation: !eligible });
     } catch (e) {
       await q(`UPDATE memos SET status='failed' WHERE id=$1`, [id]).catch(() => {});
       throw e;

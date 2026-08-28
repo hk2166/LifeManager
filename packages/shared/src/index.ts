@@ -35,7 +35,7 @@ export interface ItemWithSource extends Item {
   source: Pick<SourceMessage, 'id' | 'subject' | 'from_name' | 'from_email' | 'sent_at' | 'gmail_url'> | null;
 }
 
-export type MemoStatus = 'routed' | 'pending_confirmation' | 'failed';
+export type MemoStatus = 'routed' | 'pending_confirmation' | 'failed' | 'answered';
 
 export interface MemoEntities {
   title: string;
@@ -57,9 +57,13 @@ export interface Memo {
 }
 
 export interface MemoResult {
+  // 'capture' files an item (default; older clients omit it). 'answer' means the
+  // memo was a spoken question, answered from memory instead of filed.
+  mode?: 'capture' | 'answer';
   memo: Memo;
   item: Item | null;
   needs_confirmation: boolean;
+  answer?: AskResult;
 }
 
 export interface EventRow {
