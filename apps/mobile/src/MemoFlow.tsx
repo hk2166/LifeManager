@@ -145,7 +145,7 @@ export function MemoFlow({ onDone }: { onDone: () => void }) {
       {phase === 'chip' && result && (
         <View style={s.center}>
           <Text style={s.heard}>"{result.memo.transcript}"</Text>
-          <Text style={s.ask}>Not sure - file this as?</Text>
+          <Text style={s.ask}>Not sure — file this as?</Text>
           <View style={s.chips}>
             {[result.memo.suggested_type, ...ALL_TYPES.filter((t) => t !== result.memo.suggested_type)]
               .filter((t): t is ItemType => Boolean(t))
