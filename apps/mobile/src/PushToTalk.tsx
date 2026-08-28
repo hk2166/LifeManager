@@ -3,7 +3,7 @@ import { AccessibilityInfo, ActivityIndicator, Animated, Pressable, StyleSheet, 
 import { AudioModule, RecordingPresets, setAudioModeAsync, useAudioRecorder } from 'expo-audio';
 import { confirmMemo, speak, uploadMemo, type ItemType, type MemoResult } from './api';
 import { TYPE_ICONS } from './components';
-import { C } from './theme';
+import { C, MONO } from './theme';
 
 // Hold the mic = push-to-talk (record while held, file/answer on release).
 // A quick tap (< TAP_MS) instead opens the full review sheet for longer dictation.
@@ -213,7 +213,7 @@ export function CapturePanel({ ptt, topOffset = 8 }: { ptt: PushToTalk; topOffse
               </Text>
               <View style={s.actions}>
                 <Pressable onPress={ptt.replay} hitSlop={8} style={({ pressed }) => [s.iconBtn, pressed && s.dim]}>
-                  <Text style={s.iconTxt}>🔊</Text>
+                  <Text style={s.iconTxt}>▶</Text>
                 </Pressable>
                 <Pressable onPress={ptt.dismiss} hitSlop={8} style={({ pressed }) => pressed && s.dim}>
                   <Text style={s.done}>Done</Text>
@@ -238,7 +238,6 @@ export function CapturePanel({ ptt, topOffset = 8 }: { ptt: PushToTalk; topOffse
                   >
                     <Text style={[s.chipTxt, i === 0 && s.chipTopTxt]}>
                       {TYPE_ICONS[t]} {t}
-                      {i === 0 ? ' ✨' : ''}
                     </Text>
                   </Pressable>
                 ))}
@@ -259,7 +258,7 @@ export function CapturePanel({ ptt, topOffset = 8 }: { ptt: PushToTalk; topOffse
               </Text>
             </View>
             <Pressable onPress={ptt.replay} hitSlop={8} style={({ pressed }) => [s.iconBtn, pressed && s.dim]}>
-              <Text style={s.iconTxt}>🔊</Text>
+              <Text style={s.iconTxt}>▶</Text>
             </Pressable>
           </View>
         )}
@@ -293,24 +292,24 @@ const s = StyleSheet.create({
   },
   row: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   recDot: { width: 12, height: 12, borderRadius: 6, backgroundColor: C.rec },
-  recTimer: { color: C.text, fontSize: 17, fontWeight: '600', fontVariant: ['tabular-nums'], letterSpacing: -0.3 },
+  recTimer: { color: C.text, fontSize: 16, fontWeight: '600', fontVariant: ['tabular-nums'], fontFamily: MONO },
   recHint: { color: C.muted, fontSize: 14, flex: 1, letterSpacing: -0.1 },
   hint: { color: C.muted, fontSize: 14.5, letterSpacing: -0.1 },
   you: { color: C.muted, fontSize: 14, fontStyle: 'italic', letterSpacing: -0.2, lineHeight: 20 },
   answerWrap: { gap: 9 },
   answer: { color: C.text, fontSize: 16, lineHeight: 23, letterSpacing: -0.3, fontWeight: '500' },
   answerFoot: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 2 },
-  sources: { color: C.faint, fontSize: 12, letterSpacing: -0.1 },
+  sources: { color: C.faint, fontSize: 11, letterSpacing: 0.2, fontFamily: MONO },
   actions: { flexDirection: 'row', alignItems: 'center', gap: 14 },
   iconBtn: { width: 32, height: 32, borderRadius: 16, backgroundColor: C.fill, alignItems: 'center', justifyContent: 'center' },
-  iconTxt: { fontSize: 15 },
+  iconTxt: { fontSize: 11, color: C.text, marginLeft: 1 },
   done: { color: C.accent, fontSize: 15.5, fontWeight: '600', letterSpacing: -0.2 },
   dim: { opacity: 0.5 },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 2 },
   chip: { backgroundColor: C.fill, borderRadius: 999, paddingHorizontal: 13, paddingVertical: 8 },
   chipTop: { backgroundColor: C.accent },
   chipTxt: { color: C.text, fontSize: 13.5, fontWeight: '500', letterSpacing: -0.1 },
-  chipTopTxt: { color: '#fff' },
+  chipTopTxt: { color: C.onAccent },
   discardBtn: { alignSelf: 'flex-start', paddingTop: 2 },
   discard: { color: C.muted, fontSize: 13.5, fontWeight: '500', letterSpacing: -0.1 },
   check: { color: C.green, fontSize: 24, fontWeight: '700' },

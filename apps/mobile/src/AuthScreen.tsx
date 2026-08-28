@@ -83,7 +83,7 @@ export function AuthScreen() {
 
         <Pressable style={({ pressed }) => [s.submit, pressed && s.pressed]} onPress={submit} disabled={busy}>
           {busy ? (
-            <ActivityIndicator color="#fff" />
+            <ActivityIndicator color={C.onAccent} />
           ) : (
             <Text style={s.submitText}>{mode === 'login' ? 'Sign in' : 'Create account'}</Text>
           )}
@@ -95,7 +95,7 @@ export function AuthScreen() {
 
 const s = StyleSheet.create({
   wrap: { flex: 1, backgroundColor: C.bg, justifyContent: 'center', padding: 22 },
-  card: { backgroundColor: C.panel, borderRadius: 24, padding: 24, gap: 13 },
+  card: { backgroundColor: C.panel, borderRadius: 24, padding: 24, gap: 13, borderWidth: StyleSheet.hairlineWidth, borderColor: C.border },
   brandRow: { flexDirection: 'row', alignItems: 'center', gap: 9 },
   dot: { width: 11, height: 11, borderRadius: 6, backgroundColor: C.accent },
   brand: { color: C.text, fontSize: 26, fontWeight: '700', letterSpacing: -0.6 },
@@ -112,6 +112,8 @@ const s = StyleSheet.create({
     paddingVertical: 14,
     color: C.text,
     fontSize: 16,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: C.border,
   },
   error: { color: C.danger, fontSize: 14, fontWeight: '500' },
   submit: {
@@ -122,5 +124,5 @@ const s = StyleSheet.create({
     marginTop: 6,
   },
   pressed: { opacity: 0.85, transform: [{ scale: 0.98 }] },
-  submitText: { color: '#fff', fontSize: 17, fontWeight: '600', letterSpacing: -0.2 },
+  submitText: { color: C.onAccent, fontSize: 17, fontWeight: '600', letterSpacing: -0.2 },
 });

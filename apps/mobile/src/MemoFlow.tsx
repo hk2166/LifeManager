@@ -155,9 +155,8 @@ export function MemoFlow({ onDone }: { onDone: () => void }) {
                   style={({ pressed }) => [s.chip, i === 0 && s.chipSuggested, pressed && s.chipPressed]}
                   onPress={() => pick(t)}
                 >
-                  <Text style={s.chipText}>
+                  <Text style={[s.chipText, i === 0 && s.chipTextOn]}>
                     {TYPE_ICONS[t]} {t}
-                    {i === 0 ? ' ✨' : ''}
                   </Text>
                 </Pressable>
               ))}
@@ -222,7 +221,7 @@ const s = StyleSheet.create({
     marginTop: 12,
   },
   pressed: { opacity: 0.85, transform: [{ scale: 0.97 }] },
-  stopText: { color: '#fff', fontSize: 17, fontWeight: '600', letterSpacing: -0.2 },
+  stopText: { color: C.onAccent, fontSize: 17, fontWeight: '600', letterSpacing: -0.2 },
   cancel: { color: C.muted, fontSize: 15, padding: 8 },
   heard: { color: C.text, fontSize: 18, fontStyle: 'italic', textAlign: 'center', letterSpacing: -0.3, lineHeight: 25 },
   ask: { color: C.muted, fontSize: 14.5 },
@@ -236,6 +235,7 @@ const s = StyleSheet.create({
   chipSuggested: { backgroundColor: C.accent },
   chipPressed: { opacity: 0.6 },
   chipText: { color: C.text, fontSize: 14.5, fontWeight: '500', letterSpacing: -0.1 },
+  chipTextOn: { color: C.onAccent },
   big: { fontSize: 52, color: C.green },
   routedTitle: { color: C.muted, fontSize: 12.5, textTransform: 'uppercase', letterSpacing: 0.8, fontWeight: '600' },
   itemTitle: { color: C.text, fontSize: 20, fontWeight: '600', textAlign: 'center', letterSpacing: -0.4 },

@@ -12,7 +12,7 @@ import { NudgeSheet } from './src/NudgeSheet';
 import { onNotificationTap, setupNotifications, syncProactiveNotifications } from './src/notifications';
 import { CapturePanel, usePushToTalk } from './src/PushToTalk';
 import { ItemsScreen, TodayScreen } from './src/screens';
-import { C } from './src/theme';
+import { C, MONO } from './src/theme';
 
 export default function App() {
   const { token, loaded } = useAuth();
@@ -90,7 +90,7 @@ function Home() {
           <View style={s.headerRight}>
             {error && <Text style={s.offline}>offline</Text>}
             <Pressable onPress={toggleSpeak} hitSlop={10} style={({ pressed }) => pressed && { opacity: 0.5 }}>
-              <Text style={s.speakToggle}>{speakEnabled ? '🔊' : '🔇'}</Text>
+              <Text style={[s.speakToggle, !speakEnabled && s.speakToggleOff]}>VOICE</Text>
             </Pressable>
             <Pressable onPress={logout} hitSlop={10} style={({ pressed }) => pressed && { opacity: 0.5 }}>
               <Text style={s.signout}>Sign out</Text>
@@ -134,7 +134,7 @@ function Home() {
             accessibilityLabel="Hold to talk. Tap for the full capture sheet."
           >
             <Animated.View style={[s.mic, ptt.recording && s.micRec, { transform: [{ scale: micScale }] }]}>
-              <Text style={s.micIcon}>🎤</Text>
+              <View style={[s.micDot, ptt.recording && s.micDotRec]} />
             </Animated.View>
           </Pressable>
         </View>
@@ -184,7 +184,8 @@ const s = StyleSheet.create({
   brand: { color: C.text, fontSize: 22, fontWeight: '700', letterSpacing: -0.5 },
   headerRight: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   offline: { color: C.danger, fontSize: 12.5, fontWeight: '600' },
-  speakToggle: { fontSize: 16 },
+  speakToggle: { color: C.text, fontSize: 11, fontFamily: MONO, letterSpacing: 1.5, fontWeight: '600' },
+  speakToggleOff: { color: C.faint, textDecorationLine: 'line-through' },
   signout: { color: C.muted, fontSize: 14.5, fontWeight: '500' },
   tabbar: {
     position: 'absolute',
@@ -214,11 +215,12 @@ const s = StyleSheet.create({
     backgroundColor: C.accent,
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: C.accent,
-    shadowOpacity: 0.5,
-    shadowRadius: 16,
-    shadowOffset: { width: 0, height: 6 },
+    shadowColor: '#ffffff',
+    shadowOpacity: 0.18,
+    shadowRadius: 14,
+    shadowOffset: { width: 0, height: 0 },
   },
-  micRec: { backgroundColor: C.rec, shadowColor: C.rec, shadowOpacity: 0.7 },
-  micIcon: { fontSize: 25 },
+  micRec: { backgroundColor: C.rec, shadowColor: C.rec, shadowOpacity: 0.55 },
+  micDot: { width: 15, height: 15, borderRadius: 8, backgroundColor: C.onAccent },
+  micDotRec: { width: 14, height: 14, borderRadius: 3, backgroundColor: '#ffffff' },
 });

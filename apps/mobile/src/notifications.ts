@@ -51,7 +51,7 @@ export async function syncProactiveNotifications(items: ItemWithSource[]): Promi
     const overdue = days <= 0 ? 'due now' : `${days}d overdue`;
     await Notifications.scheduleNotificationAsync({
       content: {
-        title: `⏰ Still waiting on ${who}`,
+        title: `Still waiting on ${who}`,
         body: `${target.title} — ${overdue}. Tap to send a nudge.`,
         data: { itemId: target.id },
       },

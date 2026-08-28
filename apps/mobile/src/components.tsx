@@ -1,6 +1,6 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import type { ItemWithSource } from './api';
-import { C } from './theme';
+import { C, MONO } from './theme';
 
 const DAY = 86_400_000;
 
@@ -19,13 +19,14 @@ export function fmtDue(iso: string | null): { label: string; overdue: boolean } 
   };
 }
 
+// Monochrome geometric markers — no emoji. Rendered in mono for a technical feel.
 export const TYPE_ICONS: Record<string, string> = {
-  commitment: '🤝',
-  task: '☑️',
-  reminder: '⏰',
-  note: '📝',
-  event: '📅',
-  shopping: '🛒',
+  commitment: '⇄',
+  task: '□',
+  reminder: '○',
+  note: '≡',
+  event: '◇',
+  shopping: '+',
 };
 
 export function ItemRow({
@@ -79,7 +80,7 @@ const s = StyleSheet.create({
   last: { borderBottomLeftRadius: 16, borderBottomRightRadius: 16 },
   pressed: { backgroundColor: C.panel2 },
   sep: { position: 'absolute', top: 0, left: 52, right: 0, height: StyleSheet.hairlineWidth, backgroundColor: C.hairline },
-  icon: { fontSize: 17 },
+  icon: { fontSize: 15, color: C.muted, fontFamily: MONO, width: 20, textAlign: 'center' },
   main: { flex: 1, gap: 2 },
   title: { color: C.text, fontWeight: '600', fontSize: 15.5, letterSpacing: -0.2 },
   sub: { color: C.muted, fontSize: 12.5, letterSpacing: -0.1 },

@@ -1,7 +1,7 @@
 import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 import type { ItemWithSource } from './api';
 import { fmtDue, ItemRow } from './components';
-import { C } from './theme';
+import { C, MONO } from './theme';
 
 function openCommitments(items: ItemWithSource[], direction: 'owed_by_me' | 'owed_to_me') {
   return items.filter((i) => i.type === 'commitment' && i.direction === direction && i.status === 'open');
@@ -31,7 +31,7 @@ function AttentionCard({ item, onNudge }: { item: ItemWithSource; onNudge: (i: I
   const due = fmtDue(item.due_at);
   return (
     <Pressable onPress={() => onNudge(item)} style={({ pressed }) => [s.attn, pressed && s.attnPressed]}>
-      <Text style={s.attnKicker}>⏰ Needs a nudge</Text>
+      <Text style={s.attnKicker}>Needs a nudge</Text>
       <Text style={s.attnTitle} numberOfLines={2}>
         {item.counterparty_name ?? 'Someone'} still owes you — {item.title}
       </Text>
@@ -127,28 +127,29 @@ const s = StyleSheet.create({
     padding: 18,
   },
   statN: { color: C.text, fontSize: 38, fontWeight: '700', letterSpacing: -1.4, fontVariant: ['tabular-nums'] },
-  statL: { color: C.muted, fontSize: 13.5, letterSpacing: -0.2, marginTop: 2 },
+  statL: { color: C.muted, fontSize: 11, letterSpacing: 0.8, marginTop: 4, textTransform: 'uppercase', fontFamily: MONO },
   attn: {
-    backgroundColor: 'rgba(10,132,255,0.14)',
-    borderRadius: 18,
+    backgroundColor: 'rgba(255,255,255,0.05)',
+    borderRadius: 16,
     padding: 16,
     marginTop: 12,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: 'rgba(10,132,255,0.35)',
-    gap: 6,
+    borderColor: C.border,
+    gap: 7,
   },
   attnPressed: { opacity: 0.7 },
-  attnKicker: { color: C.accent, fontSize: 12, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.6 },
+  attnKicker: { color: C.text, fontSize: 10.5, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 1.6, fontFamily: MONO },
   attnTitle: { color: C.text, fontSize: 16, fontWeight: '600', letterSpacing: -0.3, lineHeight: 22 },
   attnFoot: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 2 },
-  attnDue: { color: C.danger, fontSize: 13, fontWeight: '600', fontVariant: ['tabular-nums'] },
-  attnCta: { color: C.accent, fontSize: 14.5, fontWeight: '600', letterSpacing: -0.2 },
+  attnDue: { color: C.danger, fontSize: 12.5, fontWeight: '600', fontVariant: ['tabular-nums'], fontFamily: MONO },
+  attnCta: { color: C.text, fontSize: 14, fontWeight: '600', letterSpacing: -0.2 },
   h2: {
     color: C.muted,
-    fontSize: 12.5,
+    fontSize: 11,
     fontWeight: '600',
     textTransform: 'uppercase',
-    letterSpacing: 0.6,
+    letterSpacing: 1.4,
+    fontFamily: MONO,
     marginTop: 26,
     marginBottom: 10,
     marginLeft: 4,

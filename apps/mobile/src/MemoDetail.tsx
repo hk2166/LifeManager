@@ -43,7 +43,7 @@ export function MemoDetail({ memoId, onClose }: { memoId: string; onClose: () =>
       <ScrollView contentContainerStyle={s.body}>
         <View style={s.player}>
           <Pressable onPress={toggle} style={({ pressed }) => [s.playBtn, pressed && s.playPressed]}>
-            <Text style={s.playIcon}>{status.playing ? '⏸' : '▶'}</Text>
+            <Text style={s.playIcon}>{status.playing ? '❚❚' : '▶'}</Text>
           </Pressable>
           <View style={s.progress}>
             <View style={s.track}>
@@ -105,7 +105,7 @@ const s = StyleSheet.create({
     justifyContent: 'center',
   },
   playPressed: { opacity: 0.85, transform: [{ scale: 0.95 }] },
-  playIcon: { color: '#fff', fontSize: 19, marginLeft: 1 },
+  playIcon: { color: C.onAccent, fontSize: 15, marginLeft: 1 },
   progress: { flex: 1, gap: 8 },
   track: { height: 4, borderRadius: 2, backgroundColor: C.fill, overflow: 'hidden' },
   fill: { height: 4, borderRadius: 2, backgroundColor: C.accent },
