@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { File, UploadType } from 'expo-file-system';
-import type { ItemType, ItemWithSource, Memo, MemoResult } from 'shared';
+import { createAudioPlayer, setAudioModeAsync } from 'expo-audio';
+import { File, Paths, UploadType } from 'expo-file-system';
+import type { ItemType, ItemWithSource, Memo, MemoResult, NudgeDraft } from 'shared';
 
 export const API = process.env.EXPO_PUBLIC_API_URL ?? 'http://localhost:3001';
 
@@ -131,4 +132,54 @@ export async function confirmMemo(id: string, type: ItemType): Promise<MemoResul
 
 export const getMemo = (id: string) => getJSON<Memo>(`/api/memos/${id}`);
 
-export type { ItemType, ItemWithSource, Memo, MemoResult };
+// Feature: smart nudge draft for a "waiting on" item.
+export const getNudge = (itemId: string) => postJSON<NudgeDraft>(`/api/items/${itemId}/nudge`, {});
+
+// ---- talk back: server TTS -> local file -> playback (no native TTS module) ----
+let ttsPlayer: ReturnType<typeof createAudioPlayer> | null = null;
+let ttsSeq = 0;
+
+export function stopSpeaking() {
+  try {
+    ttsPlayer?.pause();
+    ttsPlayer?.remove();
+  } catch {}
+  ttsPlayer = null;
+}
+
+export async function speak(text: string): Promise<void> {
+  const t = text.trim();
+  if (!t) return;
+  // best-effort: talking back must never block or crash the capture flow
+  try {
+    const res = await fetch(`${API}/api/tts`, { method: 'POST', headers: headers(true), body: JSON.stringify({ text: t }) });
+    if (!res.ok) return;
+    const bytes = new Uint8Array(await res.arrayBuffer());
+    const file = new File(Paths.cache, `tts-${++ttsSeq}.mp3`);
+    try {
+      file.create({ overwrite: true });
+    } catch {}
+    file.write(bytes);
+    // recording mode leaves output on the quiet earpiece — route back to the speaker
+    await setAudioModeAsync({ allowsRecording: false, playsInSilentMode: true });
+    stopSpeaking();
+    const p = createAudioPlayer(file.uri);
+    ttsPlayer = p;
+    p.play();
+    const sub = p.addListener?.('playbackStatusUpdate', (st: { didJustFinish?: boolean }) => {
+      if (st?.didJustFinish) {
+        try {
+          p.remove();
+        } catch {}
+        try {
+          sub?.remove?.();
+        } catch {}
+        if (ttsPlayer === p) ttsPlayer = null;
+      }
+    });
+  } catch {
+    /* swallow — TTS is a nicety, not a requirement */
+  }
+}
+
+export type { ItemType, ItemWithSource, Memo, MemoResult, NudgeDraft };
