@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { Modal, Pressable, SafeAreaView, StyleSheet, Text, View } from 'react-native';
+import { Modal, Pressable, StyleSheet, Text, View } from 'react-native';
+import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { usePoll, type ItemWithSource } from './src/api';
 import { MemoDetail } from './src/MemoDetail';
@@ -15,7 +16,8 @@ export default function App() {
   const items = data ?? [];
 
   return (
-    <SafeAreaView style={s.safe}>
+    <SafeAreaProvider>
+    <SafeAreaView style={s.safe} edges={['top']}>
       <StatusBar style="light" />
       <View style={s.header}>
         <Text style={s.brand}>Life OS</Text>
@@ -58,6 +60,7 @@ export default function App() {
         {detailId && <MemoDetail memoId={detailId} onClose={() => setDetailId(null)} />}
       </Modal>
     </SafeAreaView>
+    </SafeAreaProvider>
   );
 }
 
