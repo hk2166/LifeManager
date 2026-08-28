@@ -22,10 +22,10 @@ Read this section before picking up a task. If a piece of work isn't justified b
 |---|---|---|
 | Email freshness | Poll every ~2 min (P1) on top of a 90-day backfill | Gmail push/watch + webhook infra isn't worth it for a demo |
 | Dashboard freshness | Poll API every 3–5s | No websockets; polling is indistinguishable on stage |
-| Memo audio | Record-then-upload (expo-av), not streamed | Streaming transcription is a rabbit hole; clips are <30s anyway |
+| Memo audio | Record-then-upload (expo-audio), not streamed | Streaming transcription is a rabbit hole; clips are <30s anyway |
 | Transcription | Whisper API first; Deepgram is the pre-agreed swap if p50 latency >5s | Swap is ~1h; decide Saturday morning, not Sunday |
 | LLM | Claude Sonnet 5 (`claude-sonnet-5`) with structured/tool-use output for extraction + classification | Fast, cheap, strong at structured JSON |
-| Embeddings | Voyage AI (or OpenAI) embeddings + pgvector | Anthropic API doesn't provide embeddings |
+| Embeddings | OpenAI text-embedding-3-small + pgvector | Same key as Whisper - one signup fewer; Anthropic API doesn't provide embeddings |
 | Memo → calendar event | Routes to **our own** events store, shown in-app | Writing to Google Calendar needs write scopes; we stay read-only with Google |
 | Auth | Single-user, pre-connected demo account, shared API secret | Multi-user auth is production work, not demo work |
 

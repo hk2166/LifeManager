@@ -25,15 +25,15 @@ Mobile: `npm run start -w mobile`, then open in the iOS simulator. Set `EXPO_PUB
 
 ## Status after the initial build
 
-Everything typechecks; DB + API + dashboard verified live against the seeded corpus. The LLM/audio paths are coded but need keys in `.env` before they run.
+All P0 **and P1/P2 code** is in; everything typechecks. DB + API + dashboard (incl. Today's meeting card, Ask view, digest card, nudge drafts) verified live against the seeded corpus; LLM/audio paths return clean "key not set" errors until `.env` is filled.
 
-- Done: T-01…T-05 (scaffold, db, seed corpus - `npm run db:reset` gives 21 threads / 38 messages / 5 events), T-06/T-07/T-10 (OAuth + Gmail backfill + source links), T-11/T-12 (extractor + eval), T-18…T-20 (memo pipeline + eval), T-21/T-22 (dashboard, verified in browser), T-25…T-28 (Expo app - typechecked and Metro-bundled, not yet run on a device).
-- Humans needed for: Google Cloud console setup ([docs/GOOGLE_SETUP.md](docs/GOOGLE_SETUP.md)), API keys, first simulator/device run with a real microphone, T-29/T-30 demo tuning + rehearsal.
+- Done: T-01…T-05 (scaffold, db, seed corpus - `npm run db:reset` gives 21 threads / 38 messages / 5 events), T-06…T-10 (OAuth, Gmail backfill + 2-min live sync, calendar sync, source links), T-11…T-17 (extractor + eval, embeddings, ask-memory, brief, digest, anticipation), T-18…T-20 (memo pipeline + eval), T-21…T-24 (dashboard, verified in browser), T-25…T-28 (Expo app - typechecked and Metro-bundled, not yet run on a device), T-34 (nudge drafts, copy-only). The API also runs an auto-tick: every 2 min it syncs mail + calendar, then incrementally extracts/embeds new threads - so a live "email arrives → commitment appears" moment needs zero manual steps.
+- Humans needed for: Google Cloud console setup ([docs/GOOGLE_SETUP.md](docs/GOOGLE_SETUP.md)), API keys, first simulator/device run with a real microphone, T-29/T-30 demo tuning + rehearsal. Roadmap slide for the closer: [docs/roadmap-slide.html](docs/roadmap-slide.html).
 
 First manual steps once keys exist:
 
 ```
-npm run demo:reset        # wipe + migrate + seed + run the extractor
+npm run demo:reset        # wipe + migrate + seed + extract + embed + anticipate
 npm run eval:extraction   # T-12: precision/recall vs labeled corpus
 npm run eval:memos        # T-20: classification accuracy + threshold sweep
 ```
