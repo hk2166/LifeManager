@@ -59,7 +59,7 @@ Read this section before picking up a task. If a piece of work isn't justified b
 
 | ID | Task | Pri | Est | Deps | Owner | Acceptance criteria |
 |---|---|---|---|---|---|---|
-| T-01 | Monorepo scaffold (`apps/api`, `apps/web`, `apps/mobile`, `packages/shared`), git init, README quickstart | P0 | 2h | – | | (1) Fresh clone → `pnpm i && docker compose up && pnpm dev` starts API + web. (2) Expo app boots in iOS simulator and hits the API healthcheck. |
+| T-01 | Monorepo scaffold (`apps/api`, `apps/web`, `apps/mobile`, `packages/shared`), git init, README quickstart | P0 | 2h | – | | (1) Fresh clone → `npm i && docker compose up -d && npm run dev` starts API + web. (2) Expo app boots in iOS simulator and hits the API healthcheck. |
 | T-02 | Postgres + pgvector via docker-compose; baseline migrations (messages, threads, events, items, memos) | P0 | 2h | T-01 | | (1) Migrations apply clean on empty DB. (2) `vector` extension enabled and queryable. |
 | T-03 | Google Cloud project: enable Gmail + Calendar APIs, OAuth consent screen in Testing mode, credentials; demo account added as test user | P0 | 1.5h | – | | (1) Client ID/secret in `.env`. (2) Consent flow reachable and completable by the demo account. |
 | T-04 | API keys wired: Anthropic + transcription provider, spend caps set, `.env.example` committed | P0 | 1h | T-01 | | (1) Healthcheck endpoint round-trips both APIs. (2) `.env.example` lists every required var. |
