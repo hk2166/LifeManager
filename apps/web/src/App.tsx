@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import type { ItemWithSource } from 'shared';
-import { usePoll } from './api';
+import { logout, usePoll, useAuthToken } from './api';
+import { AuthScreen } from './AuthScreen';
 import { AskView, ItemList, SourceDrawer, TodayView, type DrawerTarget } from './views';
 
 const TABS = [
@@ -13,6 +14,7 @@ const TABS = [
 type Tab = (typeof TABS)[number]['id'];
 
 export default function App() {
+  const authToken = useAuthToken();
   const [tab, setTab] = useState<Tab>('today');
   const [target, setTarget] = useState<DrawerTarget | null>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -52,11 +54,16 @@ export default function App() {
 
   const activeIndex = TABS.findIndex((t) => t.id === tab);
 
+  if (!authToken) return <AuthScreen />;
+
   return (
     <>
       <header className={scrolled ? 'chrome scrolled' : 'chrome'}>
         <div className="chrome-inner">
-          <h1 className="brand"><span className="dot" />Life OS</h1>
+          <div className="chrome-top">
+            <h1 className="brand"><span className="dot" />Life OS</h1>
+            <button className="signout" onClick={logout}>Sign out</button>
+          </div>
           <div className="segmented" role="tablist" aria-label="Views">
             <div
               className="thumb"

@@ -110,6 +110,53 @@ body {
   flex-direction: column;
   gap: 12px;
 }
+.chrome-top { display: flex; align-items: center; justify-content: space-between; }
+.signout {
+  appearance: none; border: none; background: none; cursor: pointer;
+  font: inherit; font-size: 0.86rem; font-weight: 500; color: var(--ink-2);
+  padding: 6px 10px; border-radius: 8px; transition: background 0.15s ease, color 0.15s ease;
+}
+.signout:hover { background: var(--fill); color: var(--ink); }
+
+/* ---- auth screen ---- */
+.auth-wrap { min-height: 100vh; display: grid; place-items: center; padding: 24px; }
+.auth-card {
+  width: 100%; max-width: 380px;
+  background: var(--surface); border-radius: 22px; box-shadow: var(--shadow-card);
+  padding: 30px 28px; display: flex; flex-direction: column; gap: 14px;
+}
+.auth-brand { display: flex; align-items: center; gap: 9px; font-size: 1.5rem; font-weight: 700; letter-spacing: -0.025em; }
+.auth-tagline { margin: -6px 0 6px; color: var(--ink-2); font-size: 0.92rem; letter-spacing: -0.01em; }
+.auth-toggle {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 2px;
+  background: var(--fill); border-radius: 11px; padding: 2px; margin-bottom: 4px;
+}
+.auth-toggle button {
+  appearance: none; border: none; background: none; font: inherit; font-size: 0.88rem; font-weight: 590;
+  color: var(--ink-2); padding: 8px; border-radius: 9px; cursor: pointer; transition: all 0.2s var(--ease);
+}
+.auth-toggle button[aria-selected='true'] {
+  background: var(--surface-2); color: var(--ink); box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+}
+.auth-field { display: flex; flex-direction: column; gap: 5px; }
+.auth-field span { font-size: 0.78rem; font-weight: 600; color: var(--ink-2); letter-spacing: -0.005em; padding-left: 2px; }
+.auth-field input {
+  background: var(--bg); border: 0.5px solid var(--hairline); border-radius: 12px;
+  color: var(--ink); font: inherit; padding: 11px 14px;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+.auth-field input::placeholder { color: var(--ink-3); }
+.auth-field input:focus {
+  outline: none; border-color: var(--accent);
+  box-shadow: 0 0 0 3.5px color-mix(in srgb, var(--accent) 18%, transparent);
+}
+.auth-submit { margin-top: 6px; padding: 12px; font-size: 1rem; }
+.auth-switch { text-align: center; font-size: 0.86rem; color: var(--ink-2); margin: 2px 0 0; }
+.auth-switch button {
+  appearance: none; border: none; background: none; font: inherit; font-weight: 600;
+  color: var(--accent); cursor: pointer; padding: 0;
+}
+.auth-switch button:hover { text-decoration: underline; }
 .brand {
   font-size: 1.32rem;
   font-weight: 700;

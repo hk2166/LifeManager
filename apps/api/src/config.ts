@@ -5,9 +5,11 @@ import { fileURLToPath } from 'node:url';
 export const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../..');
 dotenv.config({ path: path.join(REPO_ROOT, '.env') });
 
-// API_PORT wins locally (dev launchers inject PORT for the frontend); PORT is what
-// hosting platforms (Render/Fly/etc.) inject in production; 3001 is the local default.
-export const PORT = Number(process.env.API_PORT ?? process.env.PORT ?? 3001);
+// PORT is only trusted in production (Render sets RENDER=true + PORT). Locally, dev
+// launchers inject PORT for the frontend, so the API ignores it and uses API_PORT/3001.
+export const PORT = Number(
+  process.env.API_PORT ?? (process.env.RENDER ? process.env.PORT : undefined) ?? 3001
+);
 export const DATABASE_URL =
   process.env.DATABASE_URL ?? 'postgres://postgres:postgres@localhost:5432/lifeos';
 
