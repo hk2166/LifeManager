@@ -49,7 +49,9 @@ npm run demo:reset        # migrate + seed + extract + embed + anticipate (uses 
 npm run dev               # API on :3001, dashboard on :5173
 ```
 
-Open **http://localhost:5173** — you should see the dashboard populated with ~6 commitments, 5 waiting-on, and a "Coming up" list. ✅
+Open **http://localhost:5173**, then **create an account** (or use the demo login `hemant.k@adypu.edu.in` / `demodemo` that `db:reset` creates). Every account gets its own private copy of the demo corpus. You should see the dashboard populated with ~6 commitments, 5 waiting-on, and a "Coming up" list. ✅
+
+> The app is now multi-user: each account's data is fully isolated. `JWT_SECRET` in `.env` signs login tokens — any long random string works locally.
 
 > No API keys yet? Run `npm run db:reset` instead of `demo:reset` — you'll get the dashboard shell and seeded emails, but no AI-extracted items until you add keys and run `npm run demo:reset`.
 
