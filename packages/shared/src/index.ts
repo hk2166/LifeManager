@@ -61,3 +61,43 @@ export interface MemoResult {
   item: Item | null;
   needs_confirmation: boolean;
 }
+
+export interface EventRow {
+  id: string;
+  title: string;
+  start_at: string;
+  end_at: string | null;
+  attendees: { name: string; email: string }[];
+}
+
+export interface AskSource {
+  id: string;
+  subject: string | null;
+  from_name: string | null;
+  from_email: string;
+  sent_at: string;
+  gmail_url: string;
+}
+
+export interface AskResult {
+  answer: string;
+  confident: boolean;
+  sources: AskSource[];
+}
+
+export interface Brief {
+  event: EventRow;
+  headline: string;
+  bullets: string[];
+  ms: number;
+}
+
+export interface Digest {
+  digest: string;
+  ms: number;
+}
+
+export interface NudgeDraft {
+  subject: string;
+  body: string;
+}

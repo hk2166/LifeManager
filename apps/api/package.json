@@ -11,6 +11,9 @@
     "extract": "tsx src/ai/run-extract.ts",
     "eval:extraction": "tsx src/ai/eval-extraction.ts",
     "eval:memos": "tsx src/ai/eval-memos.ts",
+    "embed": "tsx src/ai/run-embed.ts",
+    "anticipate": "tsx src/ai/run-anticipate.ts",
+    "ingest:calendar": "tsx src/ingest/run-calendar.ts",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {

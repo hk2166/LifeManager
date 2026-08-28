@@ -18,6 +18,7 @@ export async function structured<T>(opts: {
   tool: ToolSpec;
   maxTokens?: number;
 }): Promise<T> {
+  if (!ANTHROPIC_API_KEY) throw new Error('ANTHROPIC_API_KEY not set');
   const msg = await anthropic.messages.create({
     model: MODEL,
     max_tokens: opts.maxTokens ?? 2048,

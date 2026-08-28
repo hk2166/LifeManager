@@ -5,6 +5,14 @@ import { q } from './db/index';
 import { oauthClient, saveTokens, SCOPES } from './google';
 import { h } from './http';
 import { registerMemoRoutes } from './memos';
+import { syncRecent } from './ingest/gmail';
+import { syncCalendar } from './ingest/calendar';
+import { extractAll } from './ai/extract';
+import { embedMissing } from './ai/embed';
+import { askMemory } from './ai/ask';
+import { briefForEvent } from './ai/brief';
+import { generateDigest } from './ai/digest';
+import { draftNudge } from './ai/nudge';
 
 export const gmailUrl = (messageId: string) => `https://mail.google.com/mail/u/0/#all/${messageId}`;
 
@@ -96,6 +104,53 @@ app.get('/api/messages/:id', h(async (req, res) => {
   res.json({ ...rows[0], gmail_url: gmailUrl(rows[0].id) });
 }));
 
+// ---- calendar + AI layer (T-08/T-09, T-14, T-15, T-16, T-34) ----
+app.get('/api/events', h(async (_req, res) => {
+  const { rows } = await q(
+    `SELECT * FROM events WHERE start_at >= now() - interval '1 hour' ORDER BY start_at LIMIT 20`
+  );
+  res.json(rows);
+}));
+
+app.get('/api/events/:id/brief', h(async (req, res) => {
+  const brief = await briefForEvent(req.params.id);
+  if (!brief) return res.status(404).json({ error: 'event not found' });
+  res.json(brief);
+}));
+
+app.post('/api/ask', h(async (req, res) => {
+  const question = String(req.body?.question ?? '').trim();
+  if (!question) return res.status(400).json({ error: 'question missing' });
+  res.json(await askMemory(question));
+}));
+
+app.get('/api/digest', h(async (_req, res) => res.json(await generateDigest())));
+
+app.post('/api/items/:id/nudge', h(async (req, res) => {
+  const draft = await draftNudge(req.params.id);
+  if (!draft) return res.status(404).json({ error: 'item not found' });
+  res.json(draft);
+}));
+
 registerMemoRoutes(app);
+
+// T-08: background tick - new mail + calendar every 2 min, then incremental
+// extraction/embedding. Silently idle until Google is connected / keys exist.
+let ticking = false;
+setInterval(async () => {
+  if (ticking) return;
+  ticking = true;
+  try {
+    await syncRecent();
+    await syncCalendar();
+    if (ANTHROPIC_API_KEY) await extractAll();
+    if (OPENAI_API_KEY) await embedMissing();
+  } catch (e) {
+    const msg = String(e);
+    if (!msg.includes('not connected')) console.error('[tick]', msg);
+  } finally {
+    ticking = false;
+  }
+}, 2 * 60_000);
 
 app.listen(PORT, () => console.log(`api on http://localhost:${PORT}`));
