@@ -9,7 +9,11 @@ const TOOL: ToolSpec = {
     type: 'object',
     properties: {
       headline: { type: 'string', description: 'One sentence: the single most important thing to remember' },
-      bullets: { type: 'array', items: { type: 'string' }, description: '3-6 terse bullets, open loops first' },
+      bullets: {
+        type: 'array',
+        items: { type: 'string' },
+        description: '3-6 terse bullets as a JSON array of plain-text strings, open loops first. No markup, tags, or numbering.',
+      },
     },
     required: ['headline', 'bullets'],
   },
@@ -51,8 +55,8 @@ export async function briefForEvent(eventId: string) {
         `[${new Date(m.sent_at).toDateString()} from ${m.from_name ?? m.from_email}] ${m.subject ?? ''}: ${m.body_text.slice(0, 400)}`
     )
     .join('\n\n');
-  const out = await structured<{ headline: string; bullets: string[] }>({
-    system: `You write a 10-second pre-meeting brief for ${DEMO_OWNER_NAME} <${DEMO_OWNER_EMAIL}>. Lead with open loops - what each side owes the other - then the freshest context worth remembering. Terse and specific; no filler, no advice.`,
+  const out = await structured<{ headline: string; bullets: unknown }>({
+    system: `You write a 10-second pre-meeting brief for ${DEMO_OWNER_NAME} <${DEMO_OWNER_EMAIL}>. Lead with open loops - what each side owes the other - then the freshest context worth remembering. Terse and specific; no filler, no advice. Bullets must be a plain JSON array of strings with no tags or markup.`,
     user: `Meeting: "${ev.title}" at ${new Date(ev.start_at).toLocaleString()} with ${attendees.map((a) => a.name).join(', ')}
 
 Tracked open commitments with these people:
@@ -63,5 +67,18 @@ ${mailTxt}`,
     tool: TOOL,
     maxTokens: 700,
   });
-  return { event: ev, ...out, ms: Date.now() - t0 };
+  return { event: ev, headline: String(out.headline ?? ''), bullets: toBullets(out.bullets), ms: Date.now() - t0 };
+}
+
+// The model sometimes returns bullets as one string with <item> tags or newlines
+// instead of a JSON array; the dashboard maps over them, so guarantee an array.
+function toBullets(v: unknown): string[] {
+  if (Array.isArray(v)) return v.map((x) => String(x).replace(/<[^>]+>/g, '').trim()).filter(Boolean);
+  if (typeof v === 'string') {
+    return v
+      .split(/<\/?item>|\r?\n|•|(?:^|\s)[-*]\s/)
+      .map((s) => s.replace(/<[^>]+>/g, '').trim())
+      .filter(Boolean);
+  }
+  return [];
 }
